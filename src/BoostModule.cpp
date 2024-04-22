@@ -1154,7 +1154,7 @@ namespace cmangos_module
         return false;
     }
 
-    void BoostModule::OnAddToMap(Creature* creature)
+    void BoostModule::OnAddToWorld(Creature* creature)
     {
         // Check if speaking with boost npc.
         if (creature->GetEntry() != NPC_BOOSTER)
