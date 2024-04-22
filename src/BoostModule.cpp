@@ -1538,7 +1538,7 @@ namespace cmangos_module
         {
             uint32 maxValue = 300;
             // do not let skill go beyond limit even if maxlevel > blizzlike
-#ifdef EXPANSION > 0
+#if EXPANSION > 0
             if (player->GetLevel() > 60)
             {
 #if EXPANSION == 1
