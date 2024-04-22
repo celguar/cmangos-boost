@@ -11,5 +11,8 @@ namespace cmangos_module
 
     public:
         bool enabled;
+        uint32 newRaceMinLevel;
+        uint32 minLevelAlliance;
+        uint32 minLevelHorde;
     };
 }

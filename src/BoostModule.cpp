@@ -176,14 +176,13 @@ namespace cmangos_module
 
                 player->GetPlayerMenu()->ClearMenus();
 
-                // TODO add min level config
                 uint32 minLevel = 1;
                 if (player->getRace() == RACE_DRAENEI || player->getRace() == RACE_BLOODELF)
-                    minLevel = 20;
-                if (player->GetTeam() == ALLIANCE)
-                    minLevel = 1;
-                if (player->GetTeam() == HORDE)
-                    minLevel = 1;
+                    minLevel = GetConfig()->newRaceMinLevel;
+                else if (player->GetTeam() == ALLIANCE)
+                    minLevel = GetConfig()->minLevelAlliance;
+                else if (player->GetTeam() == HORDE)
+                    minLevel = GetConfig()->minLevelHorde;
 
                 if (player->GetLevel() < minLevel)
                 {
