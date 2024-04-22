@@ -1154,6 +1154,23 @@ namespace cmangos_module
         return false;
     }
 
+    void BoostModule::OnAddToMap(Creature* creature)
+    {
+        // Check if speaking with boost npc.
+        if (creature->GetEntry() != NPC_BOOSTER)
+            return;
+
+        if (!GetConfig()->enabled)
+        {
+            creature->SetRespawnDelay(RESPAWN_ONE_DAY);
+            creature->ForcedDespawn();
+        }
+        else
+        {
+            creature->Respawn();
+        }
+    }
+
     void BoostModule::BoostPlayer(Player* player, uint32 targetLevel)
     {
         // Learn weapon skills

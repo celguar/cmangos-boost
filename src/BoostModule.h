@@ -301,6 +301,9 @@ namespace cmangos_module
         bool OnPreGossipHello(Player* player, Creature* creature) override;
         bool OnGossipSelect(Player* player, Creature* creature, uint32 sender, uint32 action, const std::string& code, uint32 gossipListId) override;
 
+        // NPC hooks
+        void OnAddToMap(Creature* creature) override;
+
     private:
         uint32 GetStarterMountForRace(Player* player);
         uint32 GetStarterEpicMountForRace(Player* player);
