@@ -16,14 +16,14 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 #
 
-set(LIBRARY_NAME tbcboost)
+set(LIBRARY_NAME boost)
 
 #Base files
-file(GLOB tbcboost_source ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/*.h)
-  source_group("tbcboost" FILES ${tbcboost_source})
+file(GLOB boost_source ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp ${CMAKE_CURRENT_SOURCE_DIR}/src/*.h)
+  source_group("boost" FILES ${boost_source})
 
 #Define base source library
-set(LIBRARY_SRCS ${tbcboost_source})
+set(LIBRARY_SRCS ${boost_source})
 
 # Define ENABLE_PLAYERBOTS if need
 if (BUILD_PLAYERBOTS)
@@ -33,7 +33,7 @@ endif()
 
 include_directories(${CMAKE_SOURCE_DIR}/src/modules/modules/src)
 add_definitions(-DENABLE_MODULES)
-add_definitions(-DENABLE_TBCBOOST)
+add_definitions(-DENABLE_BOOST)
 
 # Define Expansion
 if ( ${CMAKE_PROJECT_NAME} MATCHES "Classic")
@@ -61,11 +61,11 @@ if(UNIX)
   endif()
 endif()
 
-set_target_properties(${LIBRARY_NAME} PROPERTIES PROJECT_LABEL "TbcBoost")
+set_target_properties(${LIBRARY_NAME} PROPERTIES PROJECT_LABEL "Boost")
 
 # Install config files
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/tbcboost.conf.dist.in ${CMAKE_CURRENT_BINARY_DIR}/tbcboost.conf.dist)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/boost.conf.dist.in ${CMAKE_CURRENT_BINARY_DIR}/boost.conf.dist)
 if (NOT CONF_INSTALL_DIR)
   set(CONF_INSTALL_DIR ${CONF_DIR})
 endif()
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/tbcboost.conf.dist DESTINATION ${CONF_INSTALL_DIR})
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/boost.conf.dist DESTINATION ${CONF_INSTALL_DIR})
