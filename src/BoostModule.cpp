@@ -29,14 +29,6 @@ namespace cmangos_module
 
     void BoostModule::OnInitialize()
     {
-        //if (GetConfig()->enabled)
-        //{
-        //    // Cleanup non existent characters
-        //    CharacterDatabase.PExecute("DELETE FROM `custom_dualspec_talent` WHERE NOT EXISTS (SELECT 1 FROM `characters` WHERE `characters`.`guid` = `custom_dualspec_talent`.`guid`);");
-        //    CharacterDatabase.PExecute("DELETE FROM `custom_dualspec_talent_name` WHERE NOT EXISTS (SELECT 1 FROM `characters` WHERE `characters`.`guid` = `custom_dualspec_talent_name`.`guid`);");
-        //    CharacterDatabase.PExecute("DELETE FROM `custom_dualspec_action` WHERE NOT EXISTS (SELECT 1 FROM `characters` WHERE `characters`.`guid` = `custom_dualspec_action`.`guid`);");
-        //    CharacterDatabase.PExecute("DELETE FROM `custom_dualspec_characters` WHERE NOT EXISTS (SELECT 1 FROM `characters` WHERE `characters`.`guid` = `custom_dualspec_characters`.`guid`);");
-        //}
         FullGearList.clear();
         FullGearList.insert(std::end(FullGearList), std::begin(PlatePrimaryGear), std::end(PlatePrimaryGear));
         FullGearList.insert(std::end(FullGearList), std::begin(LeatherPrimaryGear), std::end(LeatherPrimaryGear));
@@ -174,7 +166,7 @@ namespace cmangos_module
             if (player && creature)
             {
                 // Check if speaking with boost npc
-                if (!(creature->GetEntry() == NPC_TEST_REALM_OVERLORD || creature->GetEntry() == NPC_MASTER_PROVISIONER || creature->GetEntry() == NPC_ENCHANTMENT_CRYSTAL || creature->GetEntry() == NPC_ALLIANCE_OFFICER || creature->GetEntry() == NPC_HORDE_OFFICER || creature->GetEntry() == NPC_BARBER))
+                if (creature->GetEntry() != NPC_BOOSTER)
                     return false;
 
 #ifdef ENABLE_PLAYERBOTS
@@ -184,402 +176,162 @@ namespace cmangos_module
 
                 player->GetPlayerMenu()->ClearMenus();
 
-                // Enchantment Crystal
-                if (creature->GetEntry() == NPC_ENCHANTMENT_CRYSTAL)
-                {
-                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Head", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 1);
-                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Shoulder", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 2);
-                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Cloak", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 3);
-                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Chest", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 4);
-                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Wrist", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 5);
-                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Hands", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 6);
-                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Legs", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 7);
-                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Feet", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 8);
-                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Ring", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 9);
-                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Ring2", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 10);
-                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "2H Weapon", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 11);
-                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Mainhand Weapon", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 12);
-                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Offhand", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 14);
-                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Ranged", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 16);
-                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Shield", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 17);
+                // TODO add min level config
+                uint32 minLevel = 1;
+                if (player->getRace() == RACE_DRAENEI || player->getRace() == RACE_BLOODELF)
+                    minLevel = 20;
+                if (player->GetTeam() == ALLIANCE)
+                    minLevel = 1;
+                if (player->GetTeam() == HORDE)
+                    minLevel = 1;
 
-                    player->GetPlayerMenu()->SendGossipMenu(GOSSIP_TEXT_CRYSTAL, creature->GetObjectGuid());
+                if (player->GetLevel() < minLevel)
+                {
+                    player->SEND_GOSSIP_MENU(GOSSIP_BOOST_LOW_LEVEL, creature->GetObjectGuid());
                     return true;
                 }
 
-                // Barber
-                if (creature->GetEntry() == NPC_BARBER)
+                if (player->GetLevel() < 58)
                 {
-                    int32 text = 0;
-                    uint8 standState = player->getStandState();
-                    bool sitting = true;
+                    player->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_INTERACT_1, "Boost to level 58. |cFF006400[Teleport to Dark Portal]|r", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 30, "Are you sure?", 0, false);
+                }
+                /*if (player->GetLevel() < 60)
+                {
+                    player->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_INTERACT_1, "Boost to level 60. |cFF006400[Teleport to Dark Portal]|r", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 40, "Are you sure?", 0, false);
+                }
+                if (player->GetLevel() < 70)
+                {
+                    player->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_INTERACT_1, "Boost to level 70. |cFF006400[Teleport to Shattrath]|r", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 50, "Are you sure?", 0, false);
+                }*/
 
-                    if (player->IsStandState() || standState == uint8(sitting))
-                        sitting = false;
+                if (player->GetLevel() < 58)
+                {
+                    player->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_INTERACT_1, "Give level 58 |cFF006400[Level and basic skills]|r", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 3, "Are you sure?", 0, false);
+                }
+                if (player->GetLevel() < 60)
+                {
+                    player->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_INTERACT_1, "Give level 60 |cFF006400[Level and basic skills]|r", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 4, "Are you sure?", 0, false);
+                }
+                if (player->GetLevel() < 70)
+                {
+                    player->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_INTERACT_1, "Give level 70 |cFF006400[Level and basic skills]|r", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 5, "Are you sure?", 0, false);
+                }
 
-                    // Select a gossip text
-                    if (!sitting)
-                    {
-                        creature->MonsterWhisper("Please sit down!", player);
+                if (player->GetLevel() >= 58)
+                {
+                    if (player->GetAreaId() != 3703)
+                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TAXI, "Teleport to Shattrath City", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 6);
+                    if (player->GetAreaId() != 72)
+                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TAXI, "Teleport to Blasted Lands (Dark Portal)", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 7);
 
-                        float distance = 10.0f;
-                        GameObjectList gameobjects;
-
-                        MaNGOS::GameObjectInPosRangeCheck go_check(*player, player->GetPositionX(), player->GetPositionY(), player->GetPositionZ(), distance);
-                        MaNGOS::GameObjectListSearcher<MaNGOS::GameObjectInPosRangeCheck> checker(gameobjects, go_check);
-                        Cell::VisitGridObjects(player, checker, distance);
-
-                        if (!gameobjects.empty())
-                        {
-                            std::vector<GameObject*> v(gameobjects.cbegin(), gameobjects.cend());
-                            std::random_device rd;
-                            std::mt19937 generator(rd());
-                            std::shuffle(v.begin(), v.end(), generator);
-
-                            for (GameObject* go : v)
-                            {
-                                uint32 entry = go->GetEntry();
-                                if (entry != GO_BARBER_CHAIR)
-                                    continue;
-
-                                GameObjectInfo const* goInfo = ObjectMgr::GetGameObjectInfo(entry);
-                                if (!goInfo)
-                                    continue;
-
-                                float distance = player->GetDistance2d(go->GetPositionX(), go->GetPositionY());
-                                // sit on close chair
-                                if (distance <= 1.0f)
-                                {
-                                    float slotX, slotY;
-                                    std::tie(slotX, slotY) = go->GetClosestChairSlotPosition(player);
-                                    player->NearTeleportTo(slotX, slotY, go->GetPositionZ(), go->GetOrientation());
-                                    player->SetStandState(UNIT_STAND_STATE_SIT_LOW_CHAIR + goInfo->chair.height);
-                                    creature->PlaySpellVisual(517);
-                                    sitting = true;
-                                }
-                            }
-
-                            if (!sitting)
-                            {
-                                for (GameObject* go : v)
-                                {
-                                    uint32 entry = go->GetEntry();
-                                    if (entry != GO_BARBER_CHAIR)
-                                        continue;
-
-                                    GameObjectInfo const* goInfo = ObjectMgr::GetGameObjectInfo(entry);
-                                    if (!goInfo)
-                                        continue;
-
-                                    float distance = player->GetDistance2d(go->GetPositionX(), go->GetPositionY());
-
-                                    // kick to chair
-                                    if (distance > 1.0f)
-                                    {
-                                        float angle = player->GetAngle(go);
-                                        player->KnockBackWithAngle(angle, 1.5f * distance, 8.0f);
-                                        creature->PlaySpellVisual(517);
-                                        return true;
-                                    }
-                                    // sit down
-                                    else
-                                    {
-                                        float slotX, slotY;
-                                        std::tie(slotX, slotY) = go->GetClosestChairSlotPosition(player);
-                                        player->NearTeleportTo(slotX, slotY, go->GetPositionZ(), go->GetOrientation());
-                                        player->SetStandState(UNIT_STAND_STATE_SIT_LOW_CHAIR + goInfo->chair.height);
-                                        creature->PlaySpellVisual(517);
-                                        sitting = true;
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    if (!sitting)
-                        return true;
-                    
+                    CustomTeleportLocation startLocation;
                     switch (player->getRace())
                     {
                     case RACE_HUMAN:
-                        text = player->getGender() == GENDER_FEMALE ? 50013 : 50012;    // texts seem to have been lost, even in l4g db release
-                        break;
-                    case RACE_ORC:
-                        text = player->getGender() == GENDER_FEMALE ? 50002 : 50001;
+                        startLocation = { teleLocs[4].map, teleLocs[4].x, teleLocs[4].y, teleLocs[4].z, teleLocs[4].o };
                         break;
                     case RACE_DWARF:
-                        text = player->getGender() == GENDER_FEMALE ? 50015 : 50014;
+                    case RACE_GNOME:
+                        startLocation = { teleLocs[5].map, teleLocs[5].x, teleLocs[5].y, teleLocs[5].z, teleLocs[5].o };
                         break;
                     case RACE_NIGHTELF:
-                        text = player->getGender() == GENDER_FEMALE ? 50019 : 50018;
-                        break;
-                    case RACE_UNDEAD:
-                        text = player->getGender() == GENDER_FEMALE ? 50008 : 50007;
-                        break;
-                    case RACE_TAUREN:
-                        text = player->getGender() == GENDER_FEMALE ? 50006 : 50005;
-                        break;
-                    case RACE_GNOME:
-                        text = player->getGender() == GENDER_FEMALE ? 50017 : 50016;
+                        startLocation = { teleLocs[6].map, teleLocs[6].x, teleLocs[6].y, teleLocs[6].z, teleLocs[6].o };
                         break;
                     case RACE_DRAENEI:
-                        text = player->getGender() == GENDER_FEMALE ? 50021 : 50020;
+                        startLocation = { teleLocs[7].map, teleLocs[7].x, teleLocs[7].y, teleLocs[7].z, teleLocs[7].o };
                         break;
                     case RACE_TROLL:
-                        text = player->getGender() == GENDER_FEMALE ? 50004 : 50003;
+                    case RACE_ORC:
+                        startLocation = { teleLocs[8].map, teleLocs[8].x, teleLocs[8].y, teleLocs[8].z, teleLocs[8].o };
+                        break;
+                    case RACE_UNDEAD:
+                        startLocation = { teleLocs[9].map, teleLocs[9].x, teleLocs[9].y, teleLocs[9].z, teleLocs[9].o };
+                        break;
+                    case RACE_TAUREN:
+                        startLocation = { teleLocs[10].map, teleLocs[10].x, teleLocs[10].y, teleLocs[10].z, teleLocs[10].o };
                         break;
                     case RACE_BLOODELF:
-                        text = player->getGender() == GENDER_FEMALE ? 50010 : 50009;
+                        startLocation = { teleLocs[11].map, teleLocs[11].x, teleLocs[11].y, teleLocs[11].z, teleLocs[11].o };
                         break;
                     }
 
-                    // store values to restore if player choose to cancel
-                    hairstyle = player->GetByteValue(PLAYER_BYTES, 2);
-                    haircolor = player->GetByteValue(PLAYER_BYTES, 3);
-                    facialfeature = player->GetByteValue(PLAYER_BYTES_2, 0);
-                    if (sitting)
-                    {
-                        if (!player->HasFlag(PLAYER_FLAGS, PLAYER_FLAGS_HIDE_HELM))
-                            player->ToggleFlag(PLAYER_FLAGS, PLAYER_FLAGS_HIDE_HELM);
-
-                        if (player->GetMoney() >= 0)
-                            player->ADD_GOSSIP_ITEM(0, "Cut my hair, barber!", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 1);
-                        else
-                            player->ADD_GOSSIP_ITEM(0, "You need 0 copper to pay me.", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 8);
-                    }
-                    player->SEND_GOSSIP_MENU(text, creature->GetObjectGuid());
-                    return true;
-                }
-
-                if (creature->GetEntry() == NPC_TEST_REALM_OVERLORD)
-                {
-                    // TODO add min level config
-                    uint32 minLevel = 1;
-                    if (player->getRace() == RACE_DRAENEI || player->getRace() == RACE_BLOODELF)
-                        minLevel = 20;
-                    if (player->GetTeam() == ALLIANCE)
-                        minLevel = 1;
-                    if (player->GetTeam() == HORDE)
-                        minLevel = 1;
-
-                    if (player->GetLevel() < minLevel)
-                    {
-                        player->SEND_GOSSIP_MENU(GOSSIP_TEXT_ENLIST_REFUSE_LOW, creature->GetObjectGuid());
-                        return true;
-                    }
-
-                    player->PrepareGossipMenu(creature, GOSSIP_MENU_OVERLORD_MAIN);
-
-                    if (player->GetLevel() < 58)
-                    {
-                        player->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_INTERACT_1, "Boost to level 58. |cFF006400[Teleport to Dark Portal]|r", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 30, "Are you sure?", 0, false);
-                    }
-                    /*if (player->GetLevel() < 60)
-                    {
-                        player->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_INTERACT_1, "Boost to level 60. |cFF006400[Teleport to Dark Portal]|r", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 40, "Are you sure?", 0, false);
-                    }
-                    if (player->GetLevel() < 70)
-                    {
-                        player->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_INTERACT_1, "Boost to level 70. |cFF006400[Teleport to Shattrath]|r", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 50, "Are you sure?", 0, false);
-                    }*/
-
-                    if (player->GetLevel() < 58)
-                    {
-                        player->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_INTERACT_1, "Give level 58 |cFF006400[Level and basic skills]|r", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 3, "Are you sure?", 0, false);
-                    }
-                    if (player->GetLevel() < 60)
-                    {
-                        player->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_INTERACT_1, "Give level 60 |cFF006400[Level and basic skills]|r", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 4, "Are you sure?", 0, false);
-                    }
-                    if (player->GetLevel() < 70)
-                    {
-                        player->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_INTERACT_1, "Give level 70 |cFF006400[Level and basic skills]|r", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 5, "Are you sure?", 0, false);
-                    }
-
-                    if (player->GetLevel() >= 58)
-                    {
-
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TAXI, "Teleport to Shattrath City", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 6);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TAXI, "Teleport to Blasted Lands (Dark Portal)", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 7);
+                    if (player->GetMapId() != startLocation.map || player->GetDistance2d(startLocation.x, startLocation.y) > 100.0f)
                         player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TAXI, "Teleport to Starting Area", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 24);
 
-                        if (!TaxiNodesKnown(*player))
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TAXI, "Learn Azeroth flight paths", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 13);
-                    }
-
-                    //player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TRAINER, "Train available spells", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 20);
-                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TRAINER, "Train available spells", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 21);
-
-                    if (player->GetLevel() >= 58)
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Add Blue Gear. |cFF0008E8 Level 58|r", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 2);
-                    if (player->GetLevel() >= 60)
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Add BiS Gear. |cFF0008E8 Level 60|r", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 8);
-                    if (player->GetLevel() == 70)
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Add BiS Gear. |cFF0008E8 Level 70|r", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 9);
-
-                    if (HasStarterSet(player, FullGearListBiS60))
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "|cFF8B0000Remove all level 60 BiS gear.|r", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 10);
-                    if (HasStarterSet(player, FullGearListBiS70))
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "|cFF8B0000Remove all level 70 BiS gear.|r", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 11);
-
-                    if (player->GetLevel() >= 30)
-                    {
-                        uint32 groundEpicMount = GetStarterEpicMountForRace(player);
-                        uint32 groundBlueMount = GetStarterMountForRace(player);
-                        // Flying Mount - Swift Blue Gryphon / Swift Red Wind Rider
-                        uint32 flyingMount = player->GetTeam() == ALLIANCE ? 25473 : 25477;
-                        if ((player->GetLevel() < 60 && !player->HasItemCount(groundBlueMount, 1)) ||
-                            (player->GetLevel() >= 60 && !player->HasItemCount(groundEpicMount, 1)) ||
-                            (player->GetLevel() >= 70 && !player->HasItemCount(flyingMount, 1)))
-                        {
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Give Mount(s)", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 12);
-
-                        }
-                    }
-
-                    if (player->GetLevel() >= 58 && !player->HasItemCount(4500, 4))
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_VENDOR, "Give Bags", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 23);
-
-                    if (player->GetLevel() >= 58 && !player->HasItemCount(20390, 20))
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_VENDOR, "Give Food", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 25);
-
-                    if (player->getClass() == CLASS_HUNTER || player->getClass() == CLASS_ROGUE || player->getClass() == CLASS_WARRIOR)
-                    {
-                        Item* pItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_RANGED);
-                        if (pItem)
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_VENDOR, "Give Ammo", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 26);
-                    }
-
-                    //player->ADD_GOSSIP_ITEM(GOSSIP_ICON_VENDOR, "Basic Supplies", GOSSIP_SENDER_MAIN, GOSSIP_OPTION_VENDOR);
-
-                    if (player->GetLevel() >= 10)
-                    {
-                        player->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_CHAT, "Unlearn Talents", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 14, "Are you sure?", 0, false);
-
-                        if (player->getClass() == CLASS_HUNTER)
-                        {
-                            if (!player->GetPet())
-                                player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TALK, "Pet Menu", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 17);
-                            else if (player->GetPet()->m_spells.size() >= 1)
-                                player->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "Untrain Pet", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 19);
-                        }
-                    }
-
-                    if (player->GetLevel() >= 58 && player->GetMoney() < 1000000)
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_MONEY_BAG, "Give 100 gold!", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 15);
-
-                    if (player->GetLevel() >= 58)
-                    {
-                        if (!player->HasSpell(10846) || (player->GetLevel() >= 60 && !player->HasSpell(SPELL_NETHER_BAND)) || (player->GetLevel() >= 70 && !player->HasSpell(SPELL_HEAVY_NETHER_BAND)))
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TRAINER, "Train |cFF006400First Aid|r", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 22);
-                    }
-
-                    player->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_INTERACT_1, "Reset my dungeon/raid lockouts.", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 16, "Are you sure?", 0, false);
-
-                    player->SEND_GOSSIP_MENU(GOSSIP_TEXT_GREET_70, creature->GetObjectGuid());
-                    return true;
-                }
-                else
-                {
-                    if ((creature->GetEntry() == NPC_ALLIANCE_OFFICER || creature->GetEntry() == NPC_HORDE_OFFICER) && player->GetLevel() < 58)
-                    {
-                        player->SEND_GOSSIP_MENU(GOSSIP_TEXT_ENLIST_REFUSE_LOW, creature->GetObjectGuid());
-                        return true;
-                    }
-
-                    player->PrepareGossipMenu(creature, GOSSIP_MENU_MAIN);
-                    uint32 minLevel = 1;
-                    if (player->getRace() == RACE_DRAENEI || player->getRace() == RACE_BLOODELF)
-                        minLevel = 20;
-                    if (player->GetTeam() == ALLIANCE)
-                        minLevel = 20;
-                    if (player->GetTeam() == HORDE)
-                        minLevel = 20;
-
-                    if (player->GetLevel() >= minLevel && player->GetLevel() <= 57)
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "I want to go straight to Outland. |cFF006400[INSTANT LEVEL 58]|r", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 1);
-
-                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TRAINER, "Train talent spell ranks", GOSSIP_SENDER_MAIN, GOSSIP_OPTION_TRAINER);
-
-                    if (creature->GetEntry() == NPC_MASTER_PROVISIONER)
-                    {
-                        if (player->GetLevel() >= 60)
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "|cFF0008E8Full \"best in slot\" gear - Classic|r", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 2000);
-                        if (player->GetLevel() == 70)
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "|cFF0008E8Full \"best in slot\" gear - TBC|r", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 3000);
-
-                        if (HasStarterSet(player, FullGearListBiS60))
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "|cFF8B0000Remove all level 60 BiS gear.|r", GOSSIP_SENDER_MAIN, 93);
-                        if (HasStarterSet(player, FullGearListBiS70))
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "|cFF8B0000Remove all level 70 BiS gear.|r", GOSSIP_SENDER_MAIN, 94);
-
-                        if (HasStarterSet(player, FullGearList))
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "|cFF8B0000Remove all custom uncommon gear.|r", GOSSIP_SENDER_MAIN, 95);
-                        else if (player->GetLevel() == 70)
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Build starter set of uncommon quality level 70 gear with custom stat modifiers", GOSSIP_SENDER_MAIN, 99);
-
-                        uint32 groundMount = GetStarterEpicMountForRace(player);
-                        // Flying Mount - Swift Blue Gryphon / Swift Red Wind Rider
-                        uint32 flyingMount = player->GetTeam() == ALLIANCE ? 25473 : 25477;
-                        if ((!player->HasItemCount(groundMount, 1) || !player->HasItemCount(flyingMount, 1)) && player->GetLevel() == 70)
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "I seem to be missing my mount. Can you give me one?", GOSSIP_SENDER_MAIN, 96);
-
-                        if (creature->GetMapId() == 530)
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TAXI, "Teleport to Blasted Lands (Dark Portal)", GOSSIP_SENDER_MAIN, 90);
-                        else
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TAXI, "Teleport to Shattrath City", GOSSIP_SENDER_MAIN, 91);
-
-                        if (player->GetLevel() < 70)
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TAXI, "Teleport to Test Realm Overlord (Starting Area)", GOSSIP_SENDER_MAIN, 89);
-                    }
-                    else
-                    {
-                        if (HasStarterSet(player, FullGearListInstant58))
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "|cFF8B0000Remove all level 58 starter gear.|r", GOSSIP_SENDER_MAIN, 92);
-                        else
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "I need my starter gear set!", GOSSIP_SENDER_MAIN, 99);
-
-                        uint32 checkMount = GetStarterMountForRace(player);
-                        if (!player->HasItemCount(checkMount, 1))
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "I seem to be missing my mount. Can you give me one?", GOSSIP_SENDER_MAIN, 96);
-                    }
-
                     if (!TaxiNodesKnown(*player))
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TAXI, "Learn Azeroth flight paths", GOSSIP_SENDER_MAIN, 97);
-
-                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_VENDOR, "Basic Supplies", GOSSIP_SENDER_MAIN, GOSSIP_OPTION_VENDOR);
-
-                    if (player->GetLevel() <= 60 || creature->GetEntry() == NPC_MASTER_PROVISIONER)
-                    {
-                        player->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_CHAT, "Unlearn Talents", GOSSIP_SENDER_MAIN, 500, "Are you sure?", 0, false);
-
-                        if (player->getClass() == CLASS_HUNTER)
-                        {
-                            if (!player->GetPet())
-                                player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TALK, "Pet Menu", GOSSIP_SENDER_MAIN, 30);
-                            else if (player->GetPet()->m_spells.size() >= 1)
-                                player->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "Untrain Pet", GOSSIP_SENDER_MAIN, 499);
-                        }
-                    }
-
-                    if ((creature->GetEntry() == NPC_ALLIANCE_OFFICER || creature->GetEntry() == NPC_HORDE_OFFICER) && player->GetLevel() > 58)
-                        player->SEND_GOSSIP_MENU(GOSSIP_TEXT_ENLIST_REFUSE_HIGH, creature->GetObjectGuid());
-                    else if (creature->GetEntry() == NPC_MASTER_PROVISIONER && player->GetLevel() < 60)
-                        player->SEND_GOSSIP_MENU(GOSSIP_TEXT_REFUSE_LOW_70, creature->GetObjectGuid());
-                    else if (creature->GetEntry() == NPC_ALLIANCE_OFFICER || creature->GetEntry() == NPC_HORDE_OFFICER)
-                        player->SEND_GOSSIP_MENU(GOSSIP_TEXT_ENLIST_GREET, creature->GetObjectGuid());
-                    else if (creature->GetEntry() == NPC_MASTER_PROVISIONER)
-                    {
-                        if (player->GetMoney() < 100000000)
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_MONEY_BAG, "I need money!", GOSSIP_SENDER_MAIN, 600);
-                        player->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_INTERACT_1, "Reset my dungeon/raid lockouts.", GOSSIP_SENDER_MAIN, 700, "Are you sure?", 0, false);
-                        player->SEND_GOSSIP_MENU(GOSSIP_TEXT_GREET_70, creature->GetObjectGuid());
-                    }
-
+                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TAXI, "Learn Azeroth flight paths", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 13);
                 }
-               
-                player->SendPreparedGossip(creature);
-                //player->GetPlayerMenu()->SendGossipMenu(DUALSPEC_NPC_TEXT, creature->GetObjectGuid());
+
+                //player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TRAINER, "Train available spells", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 20);
+                player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TRAINER, "Train available spells", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 21);
+
+                if (player->GetLevel() >= 58)
+                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Add Blue Gear. |cFF0008E8 Level 58|r", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 2);
+                if (player->GetLevel() >= 60)
+                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Add BiS Gear. |cFF0008E8 Level 60|r", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 8);
+                if (player->GetLevel() == 70)
+                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Add BiS Gear. |cFF0008E8 Level 70|r", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 9);
+
+                if (HasStarterSet(player, FullGearListBiS60))
+                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "|cFF8B0000Remove all level 60 BiS gear.|r", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 10);
+                if (HasStarterSet(player, FullGearListBiS70))
+                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "|cFF8B0000Remove all level 70 BiS gear.|r", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 11);
+
+                if (player->GetLevel() >= 30)
+                {
+                    uint32 groundEpicMount = GetStarterEpicMountForRace(player);
+                    uint32 groundBlueMount = GetStarterMountForRace(player);
+                    // Flying Mount - Swift Blue Gryphon / Swift Red Wind Rider
+                    uint32 flyingMount = player->GetTeam() == ALLIANCE ? 25473 : 25477;
+                    if ((player->GetLevel() < 60 && !player->HasItemCount(groundBlueMount, 1)) ||
+                        (player->GetLevel() >= 60 && !player->HasItemCount(groundEpicMount, 1)) ||
+                        (player->GetLevel() >= 70 && !player->HasItemCount(flyingMount, 1)))
+                    {
+                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Give Mount(s)", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 12);
+
+                    }
+                }
+
+                if (player->GetLevel() >= 58 && !player->HasItemCount(4500, 4))
+                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_VENDOR, "Give Bags", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 23);
+
+                if (player->GetLevel() >= 58)
+                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_VENDOR, "Give Food & Reagents", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 25);
+
+                if (player->GetLevel() >= 58 && (player->getClass() == CLASS_HUNTER || player->getClass() == CLASS_ROGUE || player->getClass() == CLASS_WARRIOR))
+                {
+                    Item* pItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_RANGED);
+                    if (pItem)
+                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_VENDOR, "Give Ammo", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 26);
+                }
+
+                //player->ADD_GOSSIP_ITEM(GOSSIP_ICON_VENDOR, "Basic Supplies", GOSSIP_SENDER_MAIN, GOSSIP_OPTION_VENDOR);
+
+                if (player->GetLevel() >= 10)
+                {
+                    player->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_CHAT, "Unlearn Talents", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 14, "Are you sure?", 0, false);
+
+                    if (player->getClass() == CLASS_HUNTER)
+                    {
+                        if (!player->GetPet())
+                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TALK, "Pet Menu", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 17);
+                        else if (player->GetPet()->m_spells.size() >= 1)
+                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "Untrain Pet", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 19);
+                    }
+                }
+
+                if (player->GetLevel() >= 58 && player->GetMoney() < 1000000)
+                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_MONEY_BAG, "Give 100 gold!", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 15);
+
+                if (player->GetLevel() >= 58)
+                {
+                    if (!player->HasSpell(10846) || (player->GetLevel() >= 60 && !player->HasSpell(SPELL_NETHER_BAND)) || (player->GetLevel() >= 70 && !player->HasSpell(SPELL_HEAVY_NETHER_BAND)))
+                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TRAINER, "Train |cFF006400First Aid|r", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 22);
+                }
+
+                player->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_INTERACT_1, "Reset my dungeon/raid lockouts.", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 16, "Are you sure?", 0, false);
+
+                player->SEND_GOSSIP_MENU(GOSSIP_BOOST_GREET, creature->GetObjectGuid());
                 return true;
             }
         }
@@ -594,7 +346,7 @@ namespace cmangos_module
             if (player && creature)
             {
                 // Check if speaking with boost npc
-                if (!(creature->GetEntry() == NPC_TEST_REALM_OVERLORD || creature->GetEntry() == NPC_MASTER_PROVISIONER || creature->GetEntry() == NPC_ENCHANTMENT_CRYSTAL || creature->GetEntry() == NPC_ALLIANCE_OFFICER || creature->GetEntry() == NPC_HORDE_OFFICER || creature->GetEntry() == NPC_BARBER))
+                if (creature->GetEntry() != NPC_BOOSTER)
                     return false;
 
 #ifdef ENABLE_PLAYERBOTS
@@ -604,369 +356,6 @@ namespace cmangos_module
 
                 player->GetPlayerMenu()->ClearMenus();
 
-                // Enchantment Crystal
-                if (creature->GetEntry() == NPC_ENCHANTMENT_CRYSTAL)
-                {
-                    if (action == GOSSIP_ACTION_INFO_DEF + 1)
-                    {
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "34 attack power 16 hit", EQUIPMENT_SLOT_HEAD, 35452);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "17 strength 16 intellect", EQUIPMENT_SLOT_HEAD, 37891);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "22 spell damage 14 spell hit", EQUIPMENT_SLOT_HEAD, 35447);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "35 healing 12 spell damage 7 mp5", EQUIPMENT_SLOT_HEAD, 35445);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "18 stamina 20 resilience", EQUIPMENT_SLOT_HEAD, 35453);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "16 defense 17 dodge", EQUIPMENT_SLOT_HEAD, 35443);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "20 Fire resistance", EQUIPMENT_SLOT_HEAD, 35456);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "20 Arcane resistance", EQUIPMENT_SLOT_HEAD, 35455);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "20 Shadow resistance", EQUIPMENT_SLOT_HEAD, 35458);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "20 Nature resistance", EQUIPMENT_SLOT_HEAD, 35454);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "20 Frost resistance", EQUIPMENT_SLOT_HEAD, 35457);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "8 all resistance", EQUIPMENT_SLOT_HEAD, 37889);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TALK, "Main Menu", 0, 0);
-                        player->GetPlayerMenu()->SendGossipMenu(GOSSIP_TEXT_CRYSTAL_2, creature->GetObjectGuid());
-                    }
-                    else if (action == GOSSIP_ACTION_INFO_DEF + 2)
-                    {
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "30 attack power 10 crit", EQUIPMENT_SLOT_SHOULDERS, 35417);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "26 attack power 14 crit", EQUIPMENT_SLOT_SHOULDERS, 29483);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "20 attack power 15 crit", EQUIPMENT_SLOT_SHOULDERS, 35439);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "18 spell damage 10 spell crit", EQUIPMENT_SLOT_SHOULDERS, 35406);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "15 spell damage 14 spell crit", EQUIPMENT_SLOT_SHOULDERS, 29467);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "12 spell damage 15 spell crit", EQUIPMENT_SLOT_SHOULDERS, 35437);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "33 healing 11 spell damage 4 mp5", EQUIPMENT_SLOT_SHOULDERS, 35404);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "31 healing 11 spell damage 5 mp5", EQUIPMENT_SLOT_SHOULDERS, 29475);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "22 healing 6 mp5", EQUIPMENT_SLOT_SHOULDERS, 35435);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "16 stamina 100 armor", EQUIPMENT_SLOT_SHOULDERS, 29480);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "10 dodge 15 defense", EQUIPMENT_SLOT_SHOULDERS, 35433);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "15 dodge 10 defense", EQUIPMENT_SLOT_SHOULDERS, 35402);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TALK, "Main Menu", 0, 0);
-                        player->GetPlayerMenu()->SendGossipMenu(GOSSIP_TEXT_CRYSTAL_2, creature->GetObjectGuid());
-                    }
-                    else if (action == GOSSIP_ACTION_INFO_DEF + 3)
-                    {
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "12 agility", EQUIPMENT_SLOT_BACK, 34004);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "20 spell penetration", EQUIPMENT_SLOT_BACK, 34003);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "15 Fire resistance", EQUIPMENT_SLOT_BACK, 25081);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "15 Arcane resistance", EQUIPMENT_SLOT_BACK, 34005);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "15 Shadow resistance", EQUIPMENT_SLOT_BACK, 34006);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "15 Nature resistance", EQUIPMENT_SLOT_BACK, 25082);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "7 all resistance", EQUIPMENT_SLOT_BACK, 27962);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "12 dodge", EQUIPMENT_SLOT_BACK, 25086);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "12 defense", EQUIPMENT_SLOT_BACK, 47051);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "120 armor", EQUIPMENT_SLOT_BACK, 27961);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "increase stealth", EQUIPMENT_SLOT_BACK, 25083);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TALK, "Main Menu", 0, 0);
-                        player->GetPlayerMenu()->SendGossipMenu(GOSSIP_TEXT_CRYSTAL_2, creature->GetObjectGuid());
-                    }
-                    else if (action == GOSSIP_ACTION_INFO_DEF + 4)
-                    {
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "15 resilience", EQUIPMENT_SLOT_CHEST, 33992);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "6 to all stats", EQUIPMENT_SLOT_CHEST, 27960);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "15 spirit", EQUIPMENT_SLOT_CHEST, 33990);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "15 defense", EQUIPMENT_SLOT_CHEST, 46594);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "150 hp", EQUIPMENT_SLOT_CHEST, 27957);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "150 Mana", EQUIPMENT_SLOT_CHEST, 27958);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Main Menu", 0, 0);
-                        player->GetPlayerMenu()->SendGossipMenu(GOSSIP_TEXT_CRYSTAL_2, creature->GetObjectGuid());
-                    }
-                    else if (action == GOSSIP_ACTION_INFO_DEF + 5)
-                    {
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "24 attack power", EQUIPMENT_SLOT_WRISTS, 34002);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "15 spell damage", EQUIPMENT_SLOT_WRISTS, 27917);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "30 healing 10 spell damage", EQUIPMENT_SLOT_WRISTS, 27911);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "12 stamina", EQUIPMENT_SLOT_WRISTS, 27914);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "12 defense", EQUIPMENT_SLOT_WRISTS, 27906);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "12 strength", EQUIPMENT_SLOT_WRISTS, 27899);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "12 intellect ", EQUIPMENT_SLOT_WRISTS, 34001);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "4 to all stats", EQUIPMENT_SLOT_WRISTS, 27905);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "6 mp5", EQUIPMENT_SLOT_WRISTS, 27913);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "9 spirit", EQUIPMENT_SLOT_WRISTS, 20009);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TALK, "Main Menu", 0, 0);
-                        player->GetPlayerMenu()->SendGossipMenu(GOSSIP_TEXT_CRYSTAL_2, creature->GetObjectGuid());
-                    }
-                    else if (action == GOSSIP_ACTION_INFO_DEF + 6)
-                    {
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "26 attack power", EQUIPMENT_SLOT_HANDS, 33996);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "15 strength", EQUIPMENT_SLOT_HANDS, 33995);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "15 agility", EQUIPMENT_SLOT_HANDS, 25080);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "20 spell damage", EQUIPMENT_SLOT_HANDS, 33997);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "35 healing 12 spell damage", EQUIPMENT_SLOT_HANDS, 33999);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "15 spell hit", EQUIPMENT_SLOT_HANDS, 33994);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "10 spell crit", EQUIPMENT_SLOT_HANDS, 33993);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TALK, "Main Menu", 0, 0);
-                        player->GetPlayerMenu()->SendGossipMenu(GOSSIP_TEXT_CRYSTAL_2, creature->GetObjectGuid());
-                    }
-                    else if (action == GOSSIP_ACTION_INFO_DEF + 7)
-                    {
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "50 attack power 12 crit", EQUIPMENT_SLOT_LEGS, 35490);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "40 stamina 12 agility", EQUIPMENT_SLOT_LEGS, 35495);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "35 spell damage 20 stamina", EQUIPMENT_SLOT_LEGS, 31372);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "66 healing 22 spell damage 20 stamina", EQUIPMENT_SLOT_LEGS, 31370);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TALK, "Main Menu", 0, 0);
-                        player->GetPlayerMenu()->SendGossipMenu(GOSSIP_TEXT_CRYSTAL_2, creature->GetObjectGuid());
-                    }
-                    else if (action == GOSSIP_ACTION_INFO_DEF + 8)
-                    {
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Movespeed 6 agility", EQUIPMENT_SLOT_FEET, 34007);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Movespeed 9 stamina", EQUIPMENT_SLOT_FEET, 34008);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "5% snare and root resistance 10 hit", EQUIPMENT_SLOT_FEET, 27954);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "12 agility", EQUIPMENT_SLOT_FEET, 27951);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "12 stamina", EQUIPMENT_SLOT_FEET, 27950);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "4 hp/mp5", EQUIPMENT_SLOT_FEET, 27948);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TALK, "Main Menu", 0, 0);
-                        player->GetPlayerMenu()->SendGossipMenu(GOSSIP_TEXT_CRYSTAL_2, creature->GetObjectGuid());
-                    }
-                    else if (action == GOSSIP_ACTION_INFO_DEF + 9)
-                    {
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "4 to all stats", EQUIPMENT_SLOT_FINGER1, 27927);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "12 spell damage", EQUIPMENT_SLOT_FINGER1, 27924);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "20 healing 7 spell damage", EQUIPMENT_SLOT_FINGER1, 27926);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "2 damage to physical attacks", EQUIPMENT_SLOT_FINGER1, 27920);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TALK, "Main Menu", 0, 0);
-                        player->GetPlayerMenu()->SendGossipMenu(GOSSIP_TEXT_CRYSTAL_2, creature->GetObjectGuid());
-                    }
-                    else if (action == GOSSIP_ACTION_INFO_DEF + 10)
-                    {
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "4 to all stats", EQUIPMENT_SLOT_FINGER2, 27927);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "12 spell damage", EQUIPMENT_SLOT_FINGER2, 27924);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "20 healing 7 spell damage", EQUIPMENT_SLOT_FINGER2, 27926);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "2 physical damage", EQUIPMENT_SLOT_FINGER2, 27920);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TALK, "Main Menu", 0, 0);
-                        player->GetPlayerMenu()->SendGossipMenu(GOSSIP_TEXT_CRYSTAL_2, creature->GetObjectGuid());
-                    }
-                    else if (action == GOSSIP_ACTION_INFO_DEF + 11)
-                    {
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "70 attack power", EQUIPMENT_SLOT_MAINHAND, 27971);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "35 agility", EQUIPMENT_SLOT_MAINHAND, 27977);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "9 physical damage", EQUIPMENT_SLOT_MAINHAND, 20030);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TALK, "Main Menu", 0, 0);
-                        player->GetPlayerMenu()->SendGossipMenu(GOSSIP_TEXT_CRYSTAL_2, creature->GetObjectGuid());
-                    }
-                    else if (action == GOSSIP_ACTION_INFO_DEF + 12)
-                    {
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Mongoose", EQUIPMENT_SLOT_MAINHAND, 27984);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Executioner", EQUIPMENT_SLOT_MAINHAND, 42974);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "20 strength", EQUIPMENT_SLOT_MAINHAND, 27972);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "20 agility", EQUIPMENT_SLOT_MAINHAND, 42620);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "40 spell damage", EQUIPMENT_SLOT_MAINHAND, 27975);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "81 healing 27 spell damage", EQUIPMENT_SLOT_MAINHAND, 34010);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "20 spirit", EQUIPMENT_SLOT_MAINHAND, 23803);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "7 physical damage", EQUIPMENT_SLOT_MAINHAND, 27967);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "50 Arcane/Fire spell damage", EQUIPMENT_SLOT_MAINHAND, 27981);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "Next Page ->", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 13);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TALK, "Main Menu", 0, 0);
-                        player->GetPlayerMenu()->SendGossipMenu(GOSSIP_TEXT_CRYSTAL_2, creature->GetObjectGuid());
-                    }
-                    else if (action == GOSSIP_ACTION_INFO_DEF + 13)
-                    {
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "30 intellect", EQUIPMENT_SLOT_MAINHAND, 27968);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Battlemaster", EQUIPMENT_SLOT_MAINHAND, 28004);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Lifestealing", EQUIPMENT_SLOT_MAINHAND, 20032);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Crusader", EQUIPMENT_SLOT_MAINHAND, 20034);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Deathfrost", EQUIPMENT_SLOT_MAINHAND, 46578);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Fiery Weapon", EQUIPMENT_SLOT_MAINHAND, 13898);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Icy Chill", EQUIPMENT_SLOT_MAINHAND, 20029);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Spellsurge", EQUIPMENT_SLOT_MAINHAND, 28003);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Adamantite Weapon Chain", EQUIPMENT_SLOT_MAINHAND, 42687);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "54 Shadow/Frost spell damage", EQUIPMENT_SLOT_MAINHAND, 27982);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "<- Previous Page", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 12);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TALK, "Main Menu", 0, 0);
-                        player->GetPlayerMenu()->SendGossipMenu(GOSSIP_TEXT_CRYSTAL_2, creature->GetObjectGuid());
-                    }
-                    else if (action == GOSSIP_ACTION_INFO_DEF + 14)
-                    {
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Mongoose", EQUIPMENT_SLOT_OFFHAND, 27984);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Executioner", EQUIPMENT_SLOT_OFFHAND, 42974);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "20 strength", EQUIPMENT_SLOT_OFFHAND, 27972);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "20 agility", EQUIPMENT_SLOT_OFFHAND, 42620);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "7 physical damage", EQUIPMENT_SLOT_OFFHAND, 27967);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "Next Page ->", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 15);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TALK, "Main Menu", 0, 0);
-                        player->GetPlayerMenu()->SendGossipMenu(GOSSIP_TEXT_CRYSTAL_2, creature->GetObjectGuid());
-                    }
-                    else if (action == GOSSIP_ACTION_INFO_DEF + 15)
-                    {
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Battlemaster", EQUIPMENT_SLOT_OFFHAND, 28004);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Lifestealing", EQUIPMENT_SLOT_OFFHAND, 20032);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Crusader", EQUIPMENT_SLOT_OFFHAND, 20034);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Deathfrost", EQUIPMENT_SLOT_OFFHAND, 46578);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Fiery Weapon", EQUIPMENT_SLOT_OFFHAND, 13898);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Icy Chill", EQUIPMENT_SLOT_OFFHAND, 20029);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Adamantite Weapon Chain", EQUIPMENT_SLOT_OFFHAND, 42687);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "<- Previous Page", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 14);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TALK, "Main Menu ", 0, 0);
-                        player->GetPlayerMenu()->SendGossipMenu(GOSSIP_TEXT_CRYSTAL_2, creature->GetObjectGuid());
-                    }
-                    else if (action == GOSSIP_ACTION_INFO_DEF + 16)
-                    {
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "28 crit", EQUIPMENT_SLOT_RANGED, 30260);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "30 hit", EQUIPMENT_SLOT_RANGED, 22779);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "12 Range damage", EQUIPMENT_SLOT_RANGED, 30252);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TALK, "Main Menu ", 0, 0);
-                        player->GetPlayerMenu()->SendGossipMenu(GOSSIP_TEXT_CRYSTAL_2, creature->GetObjectGuid());
-                    }
-                    else if (action == GOSSIP_ACTION_INFO_DEF + 17)
-                    {
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "12 resilience", EQUIPMENT_SLOT_OFFHAND, 44383);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "18 stamina", EQUIPMENT_SLOT_OFFHAND, 34009);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "12 intellect", EQUIPMENT_SLOT_OFFHAND, 27945);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "5 to all resistance", EQUIPMENT_SLOT_OFFHAND, 27947);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "15 Shield Block", EQUIPMENT_SLOT_OFFHAND, 27946);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "9 spirit", EQUIPMENT_SLOT_OFFHAND, 20016);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "8 Frost resistance", EQUIPMENT_SLOT_OFFHAND, 11224);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "30 armor", EQUIPMENT_SLOT_OFFHAND, 13464);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "26-38 damage if blocked", EQUIPMENT_SLOT_OFFHAND, 29454);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TALK, "Main Menu", 0, 0);
-                        player->GetPlayerMenu()->SendGossipMenu(GOSSIP_TEXT_CRYSTAL_2, creature->GetObjectGuid());
-                    }
-                    else if (action == GOSSIP_ACTION_INFO_DEF + 0)
-                        OnPreGossipHello(player, creature);
-                    else
-                    {
-                        // dark magic effect
-                        creature->PlaySpellVisual(412);
-                        player->PlaySpellVisual(87);
-
-                        player->EnchantItem(action, sender);
-                        OnPreGossipHello(player, creature);
-                    }
-                    return true;
-                }
-
-                // Barber
-                if (creature->GetEntry() == NPC_BARBER)
-                {
-                    char const* FeatureGossipMenu1 = "I want to change my hair style.";
-                    if (player->getRace() == RACE_TAUREN)
-                        FeatureGossipMenu1 = "I want to change my horns.";
-
-                    char const* FeatureGossipMenu2 = "I want to change my hair color.";
-                    if (player->getRace() == RACE_TAUREN)
-                        FeatureGossipMenu1 = "I want to change my horn color.";
-
-                    char const* FeatureGossipMenu = "I want to change my facial hair style.";
-                    switch (player->getRace())
-                    {
-                    case RACE_HUMAN:
-                        if (player->getGender() == GENDER_FEMALE)
-                            FeatureGossipMenu = "I want to change my piercings.";
-                        break;
-                    case RACE_ORC:
-                        if (player->getGender() == GENDER_FEMALE)
-                            FeatureGossipMenu = "I want to change my piercings.";
-                        break;
-                    case RACE_DWARF:
-                        if (player->getGender() == GENDER_FEMALE)
-                            FeatureGossipMenu = "I want to change my earrings.";
-                        break;
-                    case RACE_NIGHTELF:
-                        if (player->getGender() == GENDER_FEMALE)
-                            FeatureGossipMenu = "I want to change my markings.";
-                        break;
-                    case RACE_UNDEAD:
-                        FeatureGossipMenu = "I want to change my face.";
-                        break;
-                    case RACE_TAUREN:
-                        if (player->getGender() == GENDER_FEMALE)
-                            FeatureGossipMenu = "I want to change my hair.";
-                        break;
-                    case RACE_GNOME:
-                        if (player->getGender() == GENDER_FEMALE)
-                            FeatureGossipMenu = "I want to change my earrings.";
-                        break;
-                    case RACE_TROLL:
-                        FeatureGossipMenu = "I want to change my tusks.";
-                        break;
-                    case RACE_BLOODELF:
-                        if (player->getGender() == GENDER_FEMALE)
-                            FeatureGossipMenu = "I want to change my earrings.";
-                        break;
-                    case RACE_DRAENEI:
-                        player->getGender() == GENDER_FEMALE ? FeatureGossipMenu = "I want to change my horns." : FeatureGossipMenu = "I want to change my tentacles.";
-                        break;
-                    }
-                    // MAP
-                    // 1 - main menu
-                    // 2 - next hair style
-                    // 3 - prev hair style
-                    // 4 - next hair color
-                    // 5 - prev hair color
-                    // 6 - next facial feature
-                    // 7 - prev facial feature
-                    // 8 - not enought gold, or other close
-
-                    switch (action)
-                    {
-                        // After player requested the action
-                    case GOSSIP_ACTION_INFO_DEF + 1:
-                        /*if ( sender == GOSSIP_SENDER_MAIN )
-                        {
-                            if(player->GetMoney() >= 500000)
-                                player->ModifyMoney(-500000);
-                            else
-                                player->SendBuyError( BUY_ERR_NOT_ENOUGHT_MONEY, creature, 0, 0);
-                        }*/
-                        player->ADD_GOSSIP_ITEM(0, FeatureGossipMenu1, GOSSIP_SENDER_OPTION, GOSSIP_ACTION_INFO_DEF + 2);
-                        player->ADD_GOSSIP_ITEM(0, FeatureGossipMenu2, GOSSIP_SENDER_OPTION, GOSSIP_ACTION_INFO_DEF + 4);
-                        player->ADD_GOSSIP_ITEM(0, FeatureGossipMenu, GOSSIP_SENDER_OPTION, GOSSIP_ACTION_INFO_DEF + 6);
-                        player->SEND_GOSSIP_MENU(50023, creature->GetObjectGuid());
-                        break;
-                        // hair style
-                        // next - increase hair style
-                    case GOSSIP_ACTION_INFO_DEF + 2:
-                        if (sender == GOSSIP_SENDER_SUBOPTION)
-                            SelectHairStyle(player, creature, 1);
-                        // previous - decrease it
-                    case GOSSIP_ACTION_INFO_DEF + 3:
-                        if (action == GOSSIP_ACTION_INFO_DEF + 3 && sender == GOSSIP_SENDER_SUBOPTION)
-                            SelectHairStyle(player, creature, -1);
-                        // choose options again
-                        player->ADD_GOSSIP_ITEM(0, "Next one!", GOSSIP_SENDER_SUBOPTION, GOSSIP_ACTION_INFO_DEF + 2);
-                        player->ADD_GOSSIP_ITEM(0, "Previous one!", GOSSIP_SENDER_SUBOPTION, GOSSIP_ACTION_INFO_DEF + 3);
-                        player->ADD_GOSSIP_ITEM(0, "I'll have this one.", GOSSIP_SENDER_SUBOPTION, GOSSIP_ACTION_INFO_DEF + 1);
-                        player->SEND_GOSSIP_MENU(50024, creature->GetObjectGuid());
-                        break;
-
-                        // hair color
-                        // next - increase hair color
-                    case GOSSIP_ACTION_INFO_DEF + 4:
-                        if (sender == GOSSIP_SENDER_SUBOPTION)
-                            SelectHairColor(player, creature, 1);
-                        // previous - decrease hair color
-                    case GOSSIP_ACTION_INFO_DEF + 5:
-                        if (action == GOSSIP_ACTION_INFO_DEF + 5 && sender == GOSSIP_SENDER_SUBOPTION)
-                            SelectHairColor(player, creature, -1);
-                        // choose options again
-                        player->ADD_GOSSIP_ITEM(0, "Next one!", GOSSIP_SENDER_SUBOPTION, GOSSIP_ACTION_INFO_DEF + 4);
-                        player->ADD_GOSSIP_ITEM(0, "Previous one!", GOSSIP_SENDER_SUBOPTION, GOSSIP_ACTION_INFO_DEF + 5);
-                        player->ADD_GOSSIP_ITEM(0, "I'll have this one.", GOSSIP_SENDER_SUBOPTION, GOSSIP_ACTION_INFO_DEF + 1);
-                        player->SEND_GOSSIP_MENU(50024, creature->GetObjectGuid());
-                        break;
-
-                        // facial feature
-                        // next - increase hair style
-                    case GOSSIP_ACTION_INFO_DEF + 6:
-                        if (sender == GOSSIP_SENDER_SUBOPTION)
-                            SelectFacialFeature(player, creature, 1);
-                        // previous - decrease it
-                    case GOSSIP_ACTION_INFO_DEF + 7:
-                        if (action == GOSSIP_ACTION_INFO_DEF + 7 && sender == GOSSIP_SENDER_SUBOPTION)
-                            SelectFacialFeature(player, creature, -1);
-                        // choose options again
-                        player->ADD_GOSSIP_ITEM(0, "Next one!", GOSSIP_SENDER_SUBOPTION, GOSSIP_ACTION_INFO_DEF + 6);
-                        player->ADD_GOSSIP_ITEM(0, "Previous one!", GOSSIP_SENDER_SUBOPTION, GOSSIP_ACTION_INFO_DEF + 7);
-                        player->ADD_GOSSIP_ITEM(0, "I'll have this one.", GOSSIP_SENDER_SUBOPTION, GOSSIP_ACTION_INFO_DEF + 1);
-                        player->SEND_GOSSIP_MENU(50024, creature->GetObjectGuid());
-                        break;
-
-                        // cannot affort
-                    case GOSSIP_ACTION_INFO_DEF + 8:
-                        player->GetPlayerMenu()->CloseGossip();
-                        break;
-
-                    }
-                    return true;
-                }
-
                 switch (action)
                 {
                 // Main menu
@@ -975,31 +364,6 @@ namespace cmangos_module
                     OnPreGossipHello(player, creature);
                     break;
                 }
-                /*case 100:
-                    player->PrepareGossipMenu(creature, GOSSIP_MENU_CONTACT);
-                    player->SendPreparedGossip(creature);
-                    break;
-                case 101:
-                    player->PrepareGossipMenu(creature, GOSSIP_MENU_WHAT_IS_LV);
-                    player->SendPreparedGossip(creature);
-                    break;
-                case 102:
-                    player->PrepareGossipMenu(creature, GOSSIP_MENU_DONATING);
-                    player->SendPreparedGossip(creature);
-                    break;
-                case 103:
-                    player->PrepareGossipMenu(creature, GOSSIP_MENU_BUG_REPORT);
-                    player->SendPreparedGossip(creature);
-                    break;
-                case 104:
-                    player->PrepareGossipMenu(creature, GOSSIP_MENU_CHEATING);
-                    player->SendPreparedGossip(creature);
-                    break;*/
-                case GOSSIP_ACTION_INFO_DEF + 1:
-                    player->PrepareGossipMenu(creature, GOSSIP_MENU_BOOST_CONFIRM);
-                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "I'm ready. Take me to the front! |cFF006400[INSTANT LEVEL 58]|r", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 2);
-                    player->SendPreparedGossip(creature);
-                    break;
                 case GOSSIP_ACTION_INFO_DEF + 2:
                 {
                     // Remove any gear the character still has from initial creation (now useless)
@@ -1056,6 +420,7 @@ namespace cmangos_module
                     AddStarterSet(player, creature, SET_ID_INSTANT_58);
                     AddAmmo(player);
                     AddFood(player, 60);
+                    AddReagents(player);
                     player->CastSpell(player, SPELL_TELEPORT_VISUAL, TRIGGERED_OLD_TRIGGERED);
                     // Teleport Player to Dark Portal
                     if (player->GetTeam() == ALLIANCE)
@@ -1227,33 +592,33 @@ namespace cmangos_module
                         player->CLOSE_GOSSIP_MENU();
                         break;
                     case CLASS_SHAMAN:
-                        player->PrepareGossipMenu(creature, GOSSIP_TEXT_PICK_SPEC);
+                        player->PrepareGossipMenu(creature, GOSSIP_BOOST_PICK_SPEC);
                         player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Restoration", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 2001);
                         player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Enhancement", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 2002);
                         player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Elemental", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 2003);
                         player->SendPreparedGossip(creature);
                         break;
                     case CLASS_PRIEST:
-                        player->PrepareGossipMenu(creature, GOSSIP_TEXT_PICK_SPEC);
+                        player->PrepareGossipMenu(creature, GOSSIP_BOOST_PICK_SPEC);
                         player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Shadow", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 2004);
                         player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Discipline/Holy", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 2005);
                         player->SendPreparedGossip(creature);
                         break;
                     case CLASS_PALADIN:
-                        player->PrepareGossipMenu(creature, GOSSIP_TEXT_PICK_SPEC);
+                        player->PrepareGossipMenu(creature, GOSSIP_BOOST_PICK_SPEC);
                         player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Holy", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 2006);
                         player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Retribution", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 2007);
                         player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Protection", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 2008);
                         player->SendPreparedGossip(creature);
                         break;
                     case CLASS_WARRIOR:
-                        player->PrepareGossipMenu(creature, GOSSIP_TEXT_PICK_SPEC);
+                        player->PrepareGossipMenu(creature, GOSSIP_BOOST_PICK_SPEC);
                         player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Fury/Arms", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 2009);
                         player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Protection", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 2010);
                         player->SendPreparedGossip(creature);
                         break;
                     case CLASS_DRUID:
-                        player->PrepareGossipMenu(creature, GOSSIP_TEXT_PICK_SPEC);
+                        player->PrepareGossipMenu(creature, GOSSIP_BOOST_PICK_SPEC);
                         player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Feral (Cat/DPS)", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 2011);
                         player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Feral (Bear/Tank)", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 2012);
                         player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Balance", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 2013);
@@ -1292,7 +657,6 @@ namespace cmangos_module
                 case GOSSIP_ACTION_INFO_DEF + 2013: GivePlayerItems(player, creature, Lvl60BiS_DruidBalance); player->GetPlayerMenu()->CloseGossip(); break;
                     // Druid - Restoration
                 case GOSSIP_ACTION_INFO_DEF + 2014: GivePlayerItems(player, creature, Lvl60BiS_DruidResto); player->GetPlayerMenu()->CloseGossip(); break;
-
                 // TBC Full Best in Slot
                 case GOSSIP_ACTION_INFO_DEF + 9:
                 {
@@ -1315,33 +679,33 @@ namespace cmangos_module
                         player->CLOSE_GOSSIP_MENU();
                         break;
                     case CLASS_SHAMAN:
-                        player->PrepareGossipMenu(creature, GOSSIP_TEXT_PICK_SPEC);
+                        player->PrepareGossipMenu(creature, GOSSIP_BOOST_PICK_SPEC);
                         player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Restoration", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 3001);
                         player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Enhancement", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 3002);
                         player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Elemental", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 3003);
                         player->SendPreparedGossip(creature);
                         break;
                     case CLASS_PRIEST:
-                        player->PrepareGossipMenu(creature, GOSSIP_TEXT_PICK_SPEC);
+                        player->PrepareGossipMenu(creature, GOSSIP_BOOST_PICK_SPEC);
                         player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Shadow", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 3004);
                         player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Discipline/Holy", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 3005);
                         player->SendPreparedGossip(creature);
                         break;
                     case CLASS_PALADIN:
-                        player->PrepareGossipMenu(creature, GOSSIP_TEXT_PICK_SPEC);
+                        player->PrepareGossipMenu(creature, GOSSIP_BOOST_PICK_SPEC);
                         player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Holy", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 3006);
                         player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Retribution", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 3007);
                         player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Protection", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 3008);
                         player->SendPreparedGossip(creature);
                         break;
                     case CLASS_WARRIOR:
-                        player->PrepareGossipMenu(creature, GOSSIP_TEXT_PICK_SPEC);
+                        player->PrepareGossipMenu(creature, GOSSIP_BOOST_PICK_SPEC);
                         player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Fury/Arms", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 3009);
                         player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Protection", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 3010);
                         player->SendPreparedGossip(creature);
                         break;
                     case CLASS_DRUID:
-                        player->PrepareGossipMenu(creature, GOSSIP_TEXT_PICK_SPEC);
+                        player->PrepareGossipMenu(creature, GOSSIP_BOOST_PICK_SPEC);
                         player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Feral (Cat/DPS)", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 3011);
                         player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Feral (Bear/Tank)", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 3012);
                         player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Balance", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 3013);
@@ -1351,7 +715,6 @@ namespace cmangos_module
                     }
                     break;
                 }
-
                 // TBC Full Best in Slot (Spec Selected)
                 // Shaman - Restoration
                 case GOSSIP_ACTION_INFO_DEF + 3001: GivePlayerItems(player, creature, Lvl70BiS_ShamanResto); player->GetPlayerMenu()->CloseGossip(); break;
@@ -1381,7 +744,6 @@ namespace cmangos_module
                 case GOSSIP_ACTION_INFO_DEF + 3013: GivePlayerItems(player, creature, Lvl70BiS_DruidBalance); player->GetPlayerMenu()->CloseGossip(); break;
                     // Druid - Restoration
                 case GOSSIP_ACTION_INFO_DEF + 3014: GivePlayerItems(player, creature, Lvl70BiS_DruidResto); player->GetPlayerMenu()->CloseGossip(); break;
-
                 // Add a mount
                 case GOSSIP_ACTION_INFO_DEF + 12:
                 {
@@ -1416,7 +778,6 @@ namespace cmangos_module
 
                     break;
                 }
-                
                 // Learn Azeroth Taxi paths
                 case GOSSIP_ACTION_INFO_DEF + 13:
                 {
@@ -1476,7 +837,7 @@ namespace cmangos_module
                     player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Crocolisk", GOSSIP_SENDER_MAIN, 507);
                     player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Gorilla", GOSSIP_SENDER_MAIN, 508);
                     player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Hyena", GOSSIP_SENDER_MAIN, 509);
-                    player->SEND_GOSSIP_MENU(GOSSIP_TEXT_ENLIST_PET_MENU, creature->GetObjectGuid());
+                    player->SEND_GOSSIP_MENU(GOSSIP_BOOST_PETS, creature->GetObjectGuid());
                     break;
                 }
                 // Pets - Page 2
@@ -1492,7 +853,7 @@ namespace cmangos_module
                     player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Spider", GOSSIP_SENDER_MAIN, 515);
                     player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Turtle", GOSSIP_SENDER_MAIN, 516);
                     player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Wolf", GOSSIP_SENDER_MAIN, 517);
-                    player->SEND_GOSSIP_MENU(GOSSIP_TEXT_ENLIST_PET_MENU, creature->GetObjectGuid());
+                    player->SEND_GOSSIP_MENU(GOSSIP_BOOST_PETS, creature->GetObjectGuid());
                     break;
                 }
                 // Untrain Pet
@@ -1578,29 +939,14 @@ namespace cmangos_module
                     // Traveller's Backpack
                     if (!player->HasItemCount(4500, 4))
                         player->StoreNewItemInBestSlots(4500, 4);
-
-                    //if (player->GetLevel() <= 58)
-                    //{
-                    //    // Alliance - Large Blue Sack (10 Slot) x4
-                    //    if (player->GetTeam() == ALLIANCE && !player->HasItemCount(804, 4))
-                    //        player->StoreNewItemInBestSlots(804, 4);
-                    //    // Horde - Large Red Sack (10 Slot) x4
-                    //    if (player->GetTeam() == HORDE && !player->HasItemCount(857, 4))
-                    //        player->StoreNewItemInBestSlots(857, 4);
-                    //}
-                    //else
-                    //{
-                    //    // Onyxia Hide Backpack x4
-                    //    if (!player->HasItemCount(17966, 4))
-                    //        player->StoreNewItemInBestSlots(17966, 4);
-                    //}
                     break;
                 }
-                // Give Food
+                // Give Food & Reagents
                 case GOSSIP_ACTION_INFO_DEF + 25:
                 {
                     player->GetPlayerMenu()->CloseGossip();
                     AddFood(player, 60);
+                    AddReagents(player);
                     break;
                 }
                 // Give Ammo
@@ -1615,101 +961,10 @@ namespace cmangos_module
                     // Main Menu
                     if (action == 29)
                         OnPreGossipHello(player, creature);
-                    // Pets - Page 1
-                    else if (action == 30)
-                    {
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "<- Back to Main Menu", GOSSIP_SENDER_MAIN, 29);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "Next Page ->", GOSSIP_SENDER_MAIN, 31);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Bat", GOSSIP_SENDER_MAIN, 501);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Bear", GOSSIP_SENDER_MAIN, 502);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Boar", GOSSIP_SENDER_MAIN, 503);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Carrion Bird", GOSSIP_SENDER_MAIN, 504);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Cat", GOSSIP_SENDER_MAIN, 505);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Crab", GOSSIP_SENDER_MAIN, 506);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Crocolisk", GOSSIP_SENDER_MAIN, 507);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Gorilla", GOSSIP_SENDER_MAIN, 508);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Hyena", GOSSIP_SENDER_MAIN, 509);
-                        player->SEND_GOSSIP_MENU(GOSSIP_TEXT_ENLIST_PET_MENU, creature->GetObjectGuid());
-                    }
-
-                    // Pets - Page 2
-                    else if (action == 31)
-                    {
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "<- Back to Main Menu", GOSSIP_SENDER_MAIN, 29);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "<- Previous Page", GOSSIP_SENDER_MAIN, 30);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Owl", GOSSIP_SENDER_MAIN, 510);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Raptor", GOSSIP_SENDER_MAIN, 511);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Strider", GOSSIP_SENDER_MAIN, 512);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Scorpid", GOSSIP_SENDER_MAIN, 513);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Serpent", GOSSIP_SENDER_MAIN, 514);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Spider", GOSSIP_SENDER_MAIN, 515);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Turtle", GOSSIP_SENDER_MAIN, 516);
-                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Wolf", GOSSIP_SENDER_MAIN, 517);
-                        player->SEND_GOSSIP_MENU(GOSSIP_TEXT_ENLIST_PET_MENU, creature->GetObjectGuid());
-                    }
-
                     else if (action == GOSSIP_OPTION_VENDOR)
                         player->GetSession()->SendListInventory(creature->GetObjectGuid());
-
                     else if (action == GOSSIP_OPTION_TRAINER)
                         player->GetSession()->SendTrainerList(creature->GetObjectGuid());
-
-                    // Teleport - Test Realm Overlord
-                    else if (action == 89)
-                    {
-                        player->CLOSE_GOSSIP_MENU();
-                        player->CastSpell(player, SPELL_TELEPORT_VISUAL, TRIGGERED_OLD_TRIGGERED);
-                        switch (player->getRace())
-                        {
-                        case RACE_HUMAN:
-                            player->TeleportTo(teleLocs[4].map, teleLocs[4].x, teleLocs[4].y, teleLocs[4].z, teleLocs[4].o);
-                            break;
-                        case RACE_DWARF:
-                        case RACE_GNOME:
-                            player->TeleportTo(teleLocs[5].map, teleLocs[5].x, teleLocs[5].y, teleLocs[5].z, teleLocs[5].o);
-                            break;
-                        case RACE_NIGHTELF:
-                            player->TeleportTo(teleLocs[6].map, teleLocs[6].x, teleLocs[6].y, teleLocs[6].z, teleLocs[6].o);
-                            break;
-                        case RACE_DRAENEI:
-                            player->TeleportTo(teleLocs[7].map, teleLocs[7].x, teleLocs[7].y, teleLocs[7].z, teleLocs[7].o);
-                            break;
-                        case RACE_TROLL:
-                        case RACE_ORC:
-                            player->TeleportTo(teleLocs[8].map, teleLocs[8].x, teleLocs[8].y, teleLocs[8].z, teleLocs[8].o);
-                            break;
-                        case RACE_UNDEAD:
-                            player->TeleportTo(teleLocs[9].map, teleLocs[9].x, teleLocs[9].y, teleLocs[9].z, teleLocs[9].o);
-                            break;
-                        case RACE_TAUREN:
-                            player->TeleportTo(teleLocs[10].map, teleLocs[10].x, teleLocs[10].y, teleLocs[10].z, teleLocs[10].o);
-                            break;
-                        case RACE_BLOODELF:
-                            player->TeleportTo(teleLocs[11].map, teleLocs[11].x, teleLocs[11].y, teleLocs[11].z, teleLocs[11].o);
-                            break;
-                        }
-                    }
-                    // Teleport - Blasted Lands (Dark Portal)
-                    else if (action == 90)
-                    {
-                        player->CLOSE_GOSSIP_MENU();
-                        player->CastSpell(player, SPELL_TELEPORT_VISUAL, TRIGGERED_OLD_TRIGGERED);
-                        if (player->GetTeam() == ALLIANCE)
-                            player->TeleportTo(teleLocs[0].map, teleLocs[0].x, teleLocs[0].y, teleLocs[0].z, teleLocs[0].o);
-                        else
-                            player->TeleportTo(teleLocs[1].map, teleLocs[1].x, teleLocs[1].y, teleLocs[1].z, teleLocs[1].o);
-                    }
-                    // Teleport - Shattrath City
-                    else if (action == 91)
-                    {
-                        player->CLOSE_GOSSIP_MENU();
-                        player->CastSpell(player, SPELL_TELEPORT_VISUAL, TRIGGERED_OLD_TRIGGERED);
-                        if (player->GetTeam() == ALLIANCE)
-                            player->TeleportTo(teleLocs[2].map, teleLocs[2].x, teleLocs[2].y, teleLocs[2].z, teleLocs[2].o);
-                        else
-                            player->TeleportTo(teleLocs[3].map, teleLocs[3].x, teleLocs[3].y, teleLocs[3].z, teleLocs[3].o);
-                    }
-
                     // Remove Starter Set - Instant 58
                     else if (action == 92)
                     {
@@ -1734,38 +989,8 @@ namespace cmangos_module
                         RemoveStarterSet(player, FullGearList);
                         player->CLOSE_GOSSIP_MENU();
                     }
-
-                    // Add Starter Mount
-                    else if (action == 96)
-                    {
-                        if (creature->GetEntry() == NPC_MASTER_PROVISIONER) {
-                            uint32 groundMount = GetStarterEpicMountForRace(player);
-                            if (!player->HasItemCount(groundMount, 1)) player->StoreNewItemInBestSlots(groundMount, 1);
-
-                            // Flying Mount - Swift Blue Gryphon / Swift Red Wind Rider
-                            uint32 flyingMount = player->GetTeam() == ALLIANCE ? 25473 : 25477;
-                            if (!player->HasItemCount(flyingMount, 1) && player->GetLevel() == 70) player->StoreNewItemInBestSlots(flyingMount, 1);
-                        }
-                        else {
-                            uint32 addMount = GetStarterMountForRace(player);
-                            player->StoreNewItemInBestSlots(addMount, 1);
-                        }
-
-                        player->GetPlayerMenu()->CloseGossip();
-                    }
-
-                    // Learn Flight Paths
-                    else if (action == 97)
-                    {
-                        TaxiNodesTeach(*player);
-                        player->SetFacingToObject(creature);
-                        player->HandleEmote(EMOTE_ONESHOT_SALUTE);
-                        player->CastSpell(player, SPELL_CYCLONE_VISUAL_SPAWN, TRIGGERED_OLD_TRIGGERED);
-                        player->GetPlayerMenu()->CloseGossip();
-                    }
-
                     // Choose Instant 70 Starter Set
-                    else if (action == 99 && creature->GetEntry() == NPC_MASTER_PROVISIONER)
+                    else if (action == 99)
                     {
                         player->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "<- Back to Main Menu", GOSSIP_SENDER_MAIN, 29);
                         switch (player->getClass())
@@ -1818,35 +1043,28 @@ namespace cmangos_module
                             player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Frost", GOSSIP_SENDER_MAIN, 100);
                             break;
                         }
-                        player->SEND_GOSSIP_MENU(GOSSIP_TEXT_PICK_SPEC, creature->GetObjectGuid());
+                        player->SEND_GOSSIP_MENU(GOSSIP_BOOST_PICK_SPEC, creature->GetObjectGuid());
                     }
-                    // Give Instant 58 Starter Set
-                    else if (action == 99 && (creature->GetEntry() == NPC_ALLIANCE_OFFICER || creature->GetEntry() == NPC_HORDE_OFFICER))
-                    {
-                        AddStarterSet(player, creature, SET_ID_INSTANT_58);
-                        player->GetPlayerMenu()->CloseGossip();
-                    }
-
                     // Primary - Specialization 1
                     else if (action == 100)
                     {
                         player->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "<- Back to Spec Selection", GOSSIP_SENDER_MAIN, 99);
                         OfferPrimarySecondaryModChoices(player, 200, 0);
-                        player->SEND_GOSSIP_MENU(GOSSIP_TEXT_PICK_GEAR_1, creature->GetObjectGuid());
+                        player->SEND_GOSSIP_MENU(GOSSIP_BOOST_PICK_GEAR_1, creature->GetObjectGuid());
                     }
                     // Secondary - Specialization 1
                     else if (action > 200 && action < 300)
                     {
                         AddStarterSet(player, creature, SET_ID_PRIMARY, action - 200);
                         OfferPrimarySecondaryModChoices(player, 300, 0);
-                        player->SEND_GOSSIP_MENU(GOSSIP_TEXT_PICK_GEAR_2, creature->GetObjectGuid());
+                        player->SEND_GOSSIP_MENU(GOSSIP_BOOST_PICK_GEAR_2, creature->GetObjectGuid());
                     }
                     // Tertiary - Specialization 1
                     else if (action > 300 && action < 400)
                     {
                         AddStarterSet(player, creature, SET_ID_SECONDARY, action - 300);
                         OfferTertiaryModChoices(player, 600, 0);
-                        player->SEND_GOSSIP_MENU(GOSSIP_TEXT_PICK_GEAR_3, creature->GetObjectGuid());
+                        player->SEND_GOSSIP_MENU(GOSSIP_BOOST_PICK_GEAR_3, creature->GetObjectGuid());
                     }
                     // Tertiary - Specialization 1 (cont.)
                     else if (action > 600 && action < 700)
@@ -1854,27 +1072,26 @@ namespace cmangos_module
                         AddStarterSet(player, creature, SET_ID_TERTIARY, action - 600, 0);
                         player->GetPlayerMenu()->CloseGossip();
                     }
-
                     // Primary - Specialization 2
                     else if (action == 101)
                     {
                         player->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "<- Back to Spec Selection", GOSSIP_SENDER_MAIN, 99);
                         OfferPrimarySecondaryModChoices(player, 700, 1);
-                        player->SEND_GOSSIP_MENU(GOSSIP_TEXT_PICK_GEAR_1, creature->GetObjectGuid());
+                        player->SEND_GOSSIP_MENU(GOSSIP_BOOST_PICK_GEAR_1, creature->GetObjectGuid());
                     }
                     // Secondary - Specialization 2
                     else if (action > 700 && action < 800)
                     {
                         AddStarterSet(player, creature, SET_ID_PRIMARY, action - 700);
                         OfferPrimarySecondaryModChoices(player, 800, 1);
-                        player->SEND_GOSSIP_MENU(GOSSIP_TEXT_PICK_GEAR_2, creature->GetObjectGuid());
+                        player->SEND_GOSSIP_MENU(GOSSIP_BOOST_PICK_GEAR_2, creature->GetObjectGuid());
                     }
                     // Tertiary - Specialization 2
                     else if (action > 800 && action < 900)
                     {
                         AddStarterSet(player, creature, SET_ID_SECONDARY, action - 800);
                         OfferTertiaryModChoices(player, 900, 1);
-                        player->SEND_GOSSIP_MENU(GOSSIP_TEXT_PICK_GEAR_3, creature->GetObjectGuid());
+                        player->SEND_GOSSIP_MENU(GOSSIP_BOOST_PICK_GEAR_3, creature->GetObjectGuid());
                     }
                     // Tertiary - Specialization 2 (cont.)
                     else if (action > 900 && action < 1000)
@@ -1888,21 +1105,21 @@ namespace cmangos_module
                     {
                         player->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "<- Back to Spec Selection", GOSSIP_SENDER_MAIN, 99);
                         OfferPrimarySecondaryModChoices(player, 1000, 2);
-                        player->SEND_GOSSIP_MENU(GOSSIP_TEXT_PICK_GEAR_1, creature->GetObjectGuid());
+                        player->SEND_GOSSIP_MENU(GOSSIP_BOOST_PICK_GEAR_1, creature->GetObjectGuid());
                     }
                     // Secondary - Specialization 3
                     else if (action > 1000 && action < 1100)
                     {
                         AddStarterSet(player, creature, SET_ID_PRIMARY, action - 1000);
                         OfferPrimarySecondaryModChoices(player, 1100, 2);
-                        player->SEND_GOSSIP_MENU(GOSSIP_TEXT_PICK_GEAR_2, creature->GetObjectGuid());
+                        player->SEND_GOSSIP_MENU(GOSSIP_BOOST_PICK_GEAR_2, creature->GetObjectGuid());
                     }
                     // Tertiary - Specialization 3
                     else if (action > 1100 && action < 1200)
                     {
                         AddStarterSet(player, creature, SET_ID_SECONDARY, action - 1100);
                         OfferTertiaryModChoices(player, 1200, 2);
-                        player->SEND_GOSSIP_MENU(GOSSIP_TEXT_PICK_GEAR_3, creature->GetObjectGuid());
+                        player->SEND_GOSSIP_MENU(GOSSIP_BOOST_PICK_GEAR_3, creature->GetObjectGuid());
                     }
                     // Tertiary - Specialization 3 (cont.)
                     else if (action > 1200 && action < 1300)
@@ -1910,79 +1127,7 @@ namespace cmangos_module
                         AddStarterSet(player, creature, SET_ID_TERTIARY, action - 1200, 2);
                         player->GetPlayerMenu()->CloseGossip();
                     }
-
-                    // Untrain Pet
-                    else if (action == 499)
-                    {
-                        player->GetPlayerMenu()->CloseGossip();
-                        Pet* pPet = player->GetPet();
-
-                        if (pPet && pPet->m_spells.size() >= 1)
-                        {
-                            CharmInfo* charmInfo = pPet->GetCharmInfo();
-                            if (charmInfo)
-                            {
-                                for (PetSpellMap::iterator itr = pPet->m_spells.begin(); itr != pPet->m_spells.end();)
-                                {
-                                    uint32 spell_id = itr->first;
-                                    ++itr;
-                                    pPet->unlearnSpell(spell_id, false);
-                                }
-
-                                uint32 cost = pPet->resetTalentsCost();
-
-                                pPet->SetTP(pPet->GetLevel() * (pPet->GetLoyaltyLevel() - 1));
-
-                                for (int i = 0; i < MAX_UNIT_ACTION_BAR_INDEX; ++i)
-                                    if (UnitActionBarEntry const* ab = charmInfo->GetActionBarEntry(i))
-                                        if (ab->GetAction() && ab->IsActionBarForSpell())
-                                            charmInfo->SetActionBar(i, 0, ACT_DISABLED);
-
-                                // relearn pet passives
-                                pPet->LearnPetPassives();
-
-                                pPet->m_resetTalentsTime = time(nullptr);
-                                pPet->m_resetTalentsCost = cost;
-
-                                player->PetSpellInitialize();
-                            }
-                        }
-                    }
-
-                    // Unlearn Talents
-                    else if (action == 500)
-                    {
-                        player->GetPlayerMenu()->CloseGossip();
-                        player->resetTalents(true);
-                    }
-                    // Money!
-                    else if (action == 600)
-                    {
-                        player->GetPlayerMenu()->CloseGossip();
-                        player->ModifyMoney(INT_MAX);
-                        ChatHandler(player).SendSysMessage("Added 100 gold.");
-                    }
-                    // Unbind Instances
-                    else if (action == 700)
-                    {
-                        player->GetPlayerMenu()->CloseGossip();
-                        for (uint8 i = 0; i < MAX_DIFFICULTY; ++i)
-                        {
-                            Player::BoundInstancesMap& binds = player->GetBoundInstances(Difficulty(i));
-                            for (Player::BoundInstancesMap::iterator itr = binds.begin(); itr != binds.end();)
-                            {
-                                if (itr->first != player->GetMapId())
-                                {
-                                    DungeonPersistentState* save = itr->second.state;
-                                    std::string timeleft = secsToTimeString(save->GetResetTime() - time(nullptr), true);
-                                    player->UnbindInstance(itr, Difficulty(i));
-                                }
-                                else
-                                    ++itr;
-                            }
-                        }
-                    }
-
+                    // Pets
                     else if (action == 501) CreatePet(player, creature, NPC_PET_BAT);
                     else if (action == 502) CreatePet(player, creature, NPC_PET_BEAR);
                     else if (action == 503) CreatePet(player, creature, NPC_PET_BOAR);
@@ -2000,187 +1145,6 @@ namespace cmangos_module
                     else if (action == 515) CreatePet(player, creature, NPC_PET_SPIDER);
                     else if (action == 516) CreatePet(player, creature, NPC_PET_TURTLE);
                     else if (action == 517) CreatePet(player, creature, NPC_PET_WOLF);
-
-                    // Classic Full Best in Slot
-                    // Pure DPS classes Hunter, Rogue, Mage, and Warlock don't require a secondary selection
-                    switch (action)
-                    {
-                    case GOSSIP_ACTION_INFO_DEF + 8:
-                    {
-                        switch (player->getClass())
-                        {
-                        case CLASS_ROGUE:
-                            GivePlayerItems(player, creature, Lvl60BiS_Rogue);
-                            player->CLOSE_GOSSIP_MENU();
-                            break;
-                        case CLASS_MAGE:
-                            GivePlayerItems(player, creature, Lvl60BiS_Mage);
-                            player->CLOSE_GOSSIP_MENU();
-                            break;
-                        case CLASS_HUNTER:
-                            GivePlayerItems(player, creature, Lvl60BiS_Hunter);
-                            player->CLOSE_GOSSIP_MENU();
-                            break;
-                        case CLASS_WARLOCK:
-                            GivePlayerItems(player, creature, Lvl60BiS_Warlock);
-                            player->CLOSE_GOSSIP_MENU();
-                            break;
-                        case CLASS_SHAMAN:
-                            player->PrepareGossipMenu(creature, GOSSIP_TEXT_PICK_SPEC);
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Restoration", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 2001);
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Enhancement", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 2002);
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Elemental", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 2003);
-                            player->SendPreparedGossip(creature);
-                            break;
-                        case CLASS_PRIEST:
-                            player->PrepareGossipMenu(creature, GOSSIP_TEXT_PICK_SPEC);
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Shadow", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 2004);
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Discipline/Holy", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 2005);
-                            player->SendPreparedGossip(creature);
-                            break;
-                        case CLASS_PALADIN:
-                            player->PrepareGossipMenu(creature, GOSSIP_TEXT_PICK_SPEC);
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Holy", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 2006);
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Retribution", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 2007);
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Protection", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 2008);
-                            player->SendPreparedGossip(creature);
-                            break;
-                        case CLASS_WARRIOR:
-                            player->PrepareGossipMenu(creature, GOSSIP_TEXT_PICK_SPEC);
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Fury/Arms", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 2009);
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Protection", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 2010);
-                            player->SendPreparedGossip(creature);
-                            break;
-                        case CLASS_DRUID:
-                            player->PrepareGossipMenu(creature, GOSSIP_TEXT_PICK_SPEC);
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Feral (Cat/DPS)", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 2011);
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Feral (Bear/Tank)", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 2012);
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Balance", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 2013);
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Restoration", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 2014);
-                            player->SendPreparedGossip(creature);
-                            break;
-                        }
-                        break;
-                    }
-                    // Classic Full Best in Slot (Spec Selected)
-                        // Shaman - Restoration
-                    case GOSSIP_ACTION_INFO_DEF + 2001: GivePlayerItems(player, creature, Lvl60BiS_ShamanResto); player->GetPlayerMenu()->CloseGossip(); break;
-                        // Shaman - Enhancement
-                    case GOSSIP_ACTION_INFO_DEF + 2002: GivePlayerItems(player, creature, Lvl60BiS_ShamanEnhancement); player->GetPlayerMenu()->CloseGossip(); break;
-                        // Shaman - Elemental
-                    case GOSSIP_ACTION_INFO_DEF + 2003: GivePlayerItems(player, creature, Lvl60BiS_ShamanElemental); player->GetPlayerMenu()->CloseGossip(); break;
-                        // Priest - Shadow
-                    case GOSSIP_ACTION_INFO_DEF + 2004: GivePlayerItems(player, creature, Lvl60BiS_PriestShadow); player->GetPlayerMenu()->CloseGossip(); break;
-                        // Priest - Discipline/Holy
-                    case GOSSIP_ACTION_INFO_DEF + 2005: GivePlayerItems(player, creature, Lvl60BiS_PriestDiscHoly); player->GetPlayerMenu()->CloseGossip(); break;
-                        // Paladin - Holy
-                    case GOSSIP_ACTION_INFO_DEF + 2006: GivePlayerItems(player, creature, Lvl60BiS_PaladinHoly); player->GetPlayerMenu()->CloseGossip(); break;
-                        // Paladin - Retribution
-                    case GOSSIP_ACTION_INFO_DEF + 2007: GivePlayerItems(player, creature, Lvl60BiS_PaladinRetribution); player->GetPlayerMenu()->CloseGossip(); break;
-                        // Paladin - Protection
-                    case GOSSIP_ACTION_INFO_DEF + 2008: GivePlayerItems(player, creature, Lvl60BiS_PaladinProtection); player->GetPlayerMenu()->CloseGossip(); break;
-                        // Warrior - Fury/Arms
-                    case GOSSIP_ACTION_INFO_DEF + 2009: GivePlayerItems(player, creature, Lvl60BiS_WarriorFuryArms); player->GetPlayerMenu()->CloseGossip(); break;
-                        // Warrior - Protection
-                    case GOSSIP_ACTION_INFO_DEF + 2010: GivePlayerItems(player, creature, Lvl60BiS_WarriorProtection); player->GetPlayerMenu()->CloseGossip(); break;
-                        // Druid - Feral (Cat/DPS)
-                    case GOSSIP_ACTION_INFO_DEF + 2011: GivePlayerItems(player, creature, Lvl60BiS_DruidFeralCat); player->GetPlayerMenu()->CloseGossip(); break;
-                        // Druid - Feral (Bear/Tank)
-                    case GOSSIP_ACTION_INFO_DEF + 2012: GivePlayerItems(player, creature, Lvl60BiS_DruidFeralBear); player->GetPlayerMenu()->CloseGossip(); break;
-                        // Druid - Balance
-                    case GOSSIP_ACTION_INFO_DEF + 2013: GivePlayerItems(player, creature, Lvl60BiS_DruidBalance); player->GetPlayerMenu()->CloseGossip(); break;
-                        // Druid - Restoration
-                    case GOSSIP_ACTION_INFO_DEF + 2014: GivePlayerItems(player, creature, Lvl60BiS_DruidResto); player->GetPlayerMenu()->CloseGossip(); break;
-
-                        // TBC Full Best in Slot
-                    case GOSSIP_ACTION_INFO_DEF + 10:
-                    {
-                        switch (player->getClass())
-                        {
-                        case CLASS_ROGUE:
-                            GivePlayerItems(player, creature, Lvl70BiS_Rogue);
-                            player->CLOSE_GOSSIP_MENU();
-                            break;
-                        case CLASS_MAGE:
-                            GivePlayerItems(player, creature, Lvl70BiS_Mage);
-                            player->CLOSE_GOSSIP_MENU();
-                            break;
-                        case CLASS_HUNTER:
-                            GivePlayerItems(player, creature, Lvl70BiS_Hunter);
-                            player->CLOSE_GOSSIP_MENU();
-                            break;
-                        case CLASS_WARLOCK:
-                            GivePlayerItems(player, creature, Lvl70BiS_Warlock);
-                            player->CLOSE_GOSSIP_MENU();
-                            break;
-                        case CLASS_SHAMAN:
-                            player->PrepareGossipMenu(creature, GOSSIP_TEXT_PICK_SPEC);
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Restoration", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 3001);
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Enhancement", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 3002);
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Elemental", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 3003);
-                            player->SendPreparedGossip(creature);
-                            break;
-                        case CLASS_PRIEST:
-                            player->PrepareGossipMenu(creature, GOSSIP_TEXT_PICK_SPEC);
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Shadow", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 3004);
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Discipline/Holy", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 3005);
-                            player->SendPreparedGossip(creature);
-                            break;
-                        case CLASS_PALADIN:
-                            player->PrepareGossipMenu(creature, GOSSIP_TEXT_PICK_SPEC);
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Holy", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 3006);
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Retribution", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 3007);
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Protection", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 3008);
-                            player->SendPreparedGossip(creature);
-                            break;
-                        case CLASS_WARRIOR:
-                            player->PrepareGossipMenu(creature, GOSSIP_TEXT_PICK_SPEC);
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Fury/Arms", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 3009);
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Protection", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 3010);
-                            player->SendPreparedGossip(creature);
-                            break;
-                        case CLASS_DRUID:
-                            player->PrepareGossipMenu(creature, GOSSIP_TEXT_PICK_SPEC);
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Feral (Cat/DPS)", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 3011);
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Feral (Bear/Tank)", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 3012);
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Balance", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 3013);
-                            player->ADD_GOSSIP_ITEM(GOSSIP_ICON_INTERACT_1, "Restoration", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 3014);
-                            player->SendPreparedGossip(creature);
-                            break;
-                        }
-                        break;
-                    }
-
-                    // TBC Full Best in Slot (Spec Selected)
-                    // Shaman - Restoration
-                    case GOSSIP_ACTION_INFO_DEF + 3001: GivePlayerItems(player, creature, Lvl70BiS_ShamanResto); player->GetPlayerMenu()->CloseGossip(); break;
-                        // Shaman - Enhancement
-                    case GOSSIP_ACTION_INFO_DEF + 3002: GivePlayerItems(player, creature, Lvl70BiS_ShamanEnhancement); player->GetPlayerMenu()->CloseGossip(); break;
-                        // Shaman - Elemental
-                    case GOSSIP_ACTION_INFO_DEF + 3003: GivePlayerItems(player, creature, Lvl70BiS_ShamanElemental); player->GetPlayerMenu()->CloseGossip(); break;
-                        // Priest - Shadow
-                    case GOSSIP_ACTION_INFO_DEF + 3004: GivePlayerItems(player, creature, Lvl70BiS_PriestShadow); player->GetPlayerMenu()->CloseGossip(); break;
-                        // Priest - Discipline/Holy
-                    case GOSSIP_ACTION_INFO_DEF + 3005: GivePlayerItems(player, creature, Lvl70BiS_PriestDiscHoly); player->GetPlayerMenu()->CloseGossip(); break;
-                        // Paladin - Holy
-                    case GOSSIP_ACTION_INFO_DEF + 3006: GivePlayerItems(player, creature, Lvl70BiS_PaladinHoly); player->GetPlayerMenu()->CloseGossip(); break;
-                        // Paladin - Retribution
-                    case GOSSIP_ACTION_INFO_DEF + 3007: GivePlayerItems(player, creature, Lvl70BiS_PaladinRetribution); player->GetPlayerMenu()->CloseGossip(); break;
-                        // Paladin - Protection
-                    case GOSSIP_ACTION_INFO_DEF + 3008: GivePlayerItems(player, creature, Lvl70BiS_PaladinProtection); player->GetPlayerMenu()->CloseGossip(); break;
-                        // Warrior - Fury/Arms
-                    case GOSSIP_ACTION_INFO_DEF + 3009: GivePlayerItems(player, creature, Lvl70BiS_WarriorFuryArms); player->GetPlayerMenu()->CloseGossip(); break;
-                        // Warrior - Protection
-                    case GOSSIP_ACTION_INFO_DEF + 3010: GivePlayerItems(player, creature, Lvl70BiS_WarriorProtection); player->GetPlayerMenu()->CloseGossip(); break;
-                        // Druid - Feral (Cat/DPS)
-                    case GOSSIP_ACTION_INFO_DEF + 3011: GivePlayerItems(player, creature, Lvl70BiS_DruidFeralCat); player->GetPlayerMenu()->CloseGossip(); break;
-                        // Druid - Feral (Bear/Tank)
-                    case GOSSIP_ACTION_INFO_DEF + 3012: GivePlayerItems(player, creature, Lvl70BiS_DruidFeralBear); player->GetPlayerMenu()->CloseGossip(); break;
-                        // Druid - Balance
-                    case GOSSIP_ACTION_INFO_DEF + 3013: GivePlayerItems(player, creature, Lvl70BiS_DruidBalance); player->GetPlayerMenu()->CloseGossip(); break;
-                        // Druid - Restoration
-                    case GOSSIP_ACTION_INFO_DEF + 3014: GivePlayerItems(player, creature, Lvl70BiS_DruidResto); player->GetPlayerMenu()->CloseGossip(); break;
-                    }
                 }
                 }
 
@@ -2265,6 +1229,8 @@ namespace cmangos_module
             if (targetLevel == 70 && !player->HasItemCount(flyingMount, 1))
                 player->StoreNewItemInBestSlots(flyingMount, 1);
         }
+
+        TaxiNodesTeach(*player);
 
         if (player->GetMoney() < 1000000)
             player->ModifyMoney(1000000);
@@ -2749,6 +1715,144 @@ namespace cmangos_module
     void BoostModule::AddFood(Player* player, uint32 count)
     {
         player->StoreNewItemInInventorySlot(20390, count);
+    }
+
+    void BoostModule::AddReagents(Player* player)
+    {
+        std::list<uint32> items;
+        uint32 regCount = 1;
+        switch (player->getClass())
+        {
+        case CLASS_MAGE:
+            regCount = 2;
+            if (player->GetLevel() > 11)
+                items = { 17056 };
+            if (player->GetLevel() > 19)
+                items = { 17056, 17031 };
+            if (player->GetLevel() > 35)
+                items = { 17056, 17031, 17032 };
+            if (player->GetLevel() > 55)
+                items = { 17056, 17031, 17032, 17020 };
+            break;
+        case CLASS_DRUID:
+            regCount = 2;
+            if (player->GetLevel() > 19)
+                items = { 17034 };
+            if (player->GetLevel() > 29)
+                items = { 17035 };
+            if (player->GetLevel() > 39)
+                items = { 17036 };
+            if (player->GetLevel() > 49)
+                items = { 17037, 17021 };
+            if (player->GetLevel() > 59)
+                items = { 17038, 17026 };
+            if (player->GetLevel() > 69)
+                items = { 22147, 22148 };
+            break;
+        case CLASS_PALADIN:
+            regCount = 3;
+            if (player->GetLevel() > 50)
+                items = { 21177 };
+            break;
+        case CLASS_SHAMAN:
+            regCount = 1;
+            if (player->GetLevel() > 22)
+                items = { 17057 };
+            if (player->GetLevel() > 28)
+                items = { 17057, 17058 };
+            if (player->GetLevel() > 29)
+                items = { 17057, 17058, 17030 };
+            break;
+        case CLASS_WARLOCK:
+            regCount = 10;
+            if (player->GetLevel() > 9)
+                items = { 6265 };
+            if (player->GetLevel() > 49)
+                items = { 6265, 5565 };
+            break;
+        case CLASS_PRIEST:
+            regCount = 3;
+            if (player->GetLevel() > 48)
+                items = { 17028 };
+            if (player->GetLevel() > 55)
+                items = { 17028, 17029 };
+            break;
+        case CLASS_ROGUE:
+            regCount = 1;
+            if (player->GetLevel() > 21)
+                items = { 5140 };
+            if (player->GetLevel() > 33)
+                items = { 5140, 5530 };
+            break;
+        }
+
+        for (std::list<uint32>::iterator i = items.begin(); i != items.end(); ++i)
+        {
+            ItemPrototype const* proto = sObjectMgr.GetItemPrototype(*i);
+            if (!proto)
+                continue;
+
+            uint32 maxCount = proto->GetMaxStackSize();
+            uint32 count = player->GetItemCount(proto->ItemId);
+            if (count > maxCount)
+                continue;
+
+            uint32 randCount = urand(maxCount / 2, maxCount * regCount);
+            Item* newItem = player->StoreNewItemInInventorySlot(*i, randCount);
+        }
+
+        for (PlayerSpellMap::iterator itr = player->GetSpellMap().begin(); itr != player->GetSpellMap().end(); ++itr)
+        {
+            uint32 spellId = itr->first;
+
+            if (itr->second.state == PLAYERSPELL_REMOVED || itr->second.disabled || IsPassiveSpell(spellId))
+                continue;
+
+            const SpellEntry* pSpellInfo = sSpellTemplate.LookupEntry<SpellEntry>(spellId);
+            if (!pSpellInfo)
+                continue;
+
+            if (pSpellInfo->Effect[0] == SPELL_EFFECT_LEARN_SPELL)
+                continue;
+
+            for (const auto& totem : pSpellInfo->Totem)
+            {
+                if (totem && !player->HasItemCount(totem, 1))
+                {
+                    ItemPrototype const* proto = sObjectMgr.GetItemPrototype(totem);
+                    if (!proto)
+                        continue;
+
+                    Item* newItem = player->StoreNewItemInInventorySlot(totem, 1);
+                }
+            }
+#if EXPANSION > 0
+            for (const auto& totemCat : pSpellInfo->TotemCategory)
+            {
+                if (totemCat && !player->HasItemTotemCategory(totemCat))
+                {
+                    uint32 itemId = 0;
+                    if (totemCat == 2)
+                        itemId = 5175; // earth totem
+                    if (totemCat == 3)
+                        itemId = 5178; // air totem
+                    if (totemCat == 4)
+                        itemId = 5176; // fire totem
+                    if (totemCat == 5)
+                        itemId = 5177; // water totem
+
+                    if (itemId)
+                    {
+                        ItemPrototype const* proto = sObjectMgr.GetItemPrototype(itemId);
+                        if (!proto)
+                            continue;
+
+                        Item* newItem = player->StoreNewItemInInventorySlot(itemId, 1);
+                    }
+                }
+            }
+#endif
+        }
     }
 
     bool BoostModule::HasStarterSet(Player* player, std::vector<uint32> gearList)
@@ -3287,245 +2391,5 @@ namespace cmangos_module
         }
 
         player.PlaySpellVisual(248);
-    }
-
-    maxStyles_t maxHairStyles[MAX_RACES] =
-    {
-        {0,0},  //                        0
-        {11,18},// RACE_HUMAN           = 1,
-        {6,6},  //  RACE_ORC            = 2,
-        {10,13},// RACE_DWARF           = 3,
-        {6,6},  // RACE_NIGHTELF        = 4,
-        {10,9}, // RACE_UNDEAD_PLAYER   = 5,
-        {7,6},  //  RACE_TAUREN         = 6,
-        {6,6},  // RACE_GNOME           = 7,
-        {5,4},  // RACE_TROLL           = 8,
-        {0,0},  // RACE_GOBLIN          = 9,
-        {9,13}, //  RACE_BLOODELF       = 10,
-        {7,10}, //  RACE_DRAENEI        = 11
-    };
-
-    uint8 maxHairColor[MAX_RACES] =
-    {
-        0,  //                        0
-        9,  // RACE_HUMAN           = 1,
-        7,  //  RACE_ORC            = 2,
-        9,  // RACE_DWARF           = 3,
-        7,  // RACE_NIGHTELF        = 4,
-        9,  // RACE_UNDEAD_PLAYER   = 5,
-        2,  //  RACE_TAUREN         = 6,
-        8,  // RACE_GNOME           = 7,
-        9,  // RACE_TROLL           = 8,
-        0,  // RACE_GOBLIN          = 9,
-        9,  //  RACE_BLOODELF       = 10,
-        6,  //  RACE_DRAENEI        = 11
-    };
-
-    maxStyles_t maxFacialFeatures[MAX_RACES] =
-    {
-        {0,0},  //                        0
-        {8,6},  // RACE_HUMAN           = 1,
-        {10,6}, // RACE_ORC             = 2,
-        {10,5}, // RACE_DWARF           = 3,
-        {5,9},  // RACE_NIGHTELF        = 4,
-        {16,7}, // RACE_UNDEAD_PLAYER   = 5,
-        {6,4},  // RACE_TAUREN          = 6,
-        {7,6},  // RACE_GNOME           = 7,
-        {10,5}, // RACE_TROLL           = 8,
-        {0,0},  // RACE_GOBLIN          = 9,
-        {10,9}, // RACE_BLOODELF        = 10,
-        {7,6},  // RACE_DRAENEI         = 11
-    };
-
-    void BoostModule::ChangeEffect(Player* player)
-    {
-        // First Send update to player, so most recent datas are up
-        //player->SendCreateUpdateToPlayer(player);
-        //player->SendForcedObjectUpdate();
-
-        // Force client to reload this player, so changes are visible
-        //WorldPacket data(SMSG_FORCE_DISPLAY_UPDATE, 8);
-        //data << player->GetGuidStr().c_str();
-        
-        //player->SendMessageToSet(data, true);    // Add Send Data to client so relog is not needed and changes can be specateted instantly
-
-        // Do some visual effect ( Vanish visual spell )  24222
-        player->SetDisplayId(10045);
-        player->SendForcedObjectUpdate();
-        //player->CastSpell(player, 24085, TRIGGERED_OLD_TRIGGERED);
-        player->DeMorph();
-    }
-
-    void BoostModule::SelectHairStyle(Player* player, Creature* creature, int change)
-    {
-        uint8 max = maxHairStyles[player->getRace()].maxMale;
-        if (player->getGender() == GENDER_FEMALE)
-            max = maxHairStyles[player->getRace()].maxFemale;
-
-        int current = player->GetByteValue(PLAYER_BYTES, 2);
-
-        current += change;
-
-        if (current > max)
-            current = 0;
-        else if (current < 0)
-            current = max;
-
-        // cut visual effect
-        creature->PlaySpellVisual(411);
-        player->PlaySpellVisual(415);
-
-        player->SetByteValue(PLAYER_BYTES, 2, current);
-        ChangeEffect(player);
-    }
-
-    void BoostModule::SelectHairColor(Player* player, Creature* creature, int change)
-    {
-        uint8 max = maxHairColor[player->getRace()];
-        int current = player->GetByteValue(PLAYER_BYTES, 3);
-
-        current += change;
-
-        if (current > max)
-            current = 0;
-        else if (current < 0)
-            current = max;
-
-        // magic visual effect
-        creature->PlaySpellVisual(425); // 424
-        player->PlaySpellVisual(304);
-
-        player->SetByteValue(PLAYER_BYTES, 3, current);
-        ChangeEffect(player);
-    }
-
-    void BoostModule::SelectFacialFeature(Player* player, Creature* creature, int change)
-    {
-        uint8 max = maxFacialFeatures[player->getRace()].maxMale;
-        if (player->getGender() == GENDER_FEMALE)
-            max = maxFacialFeatures[player->getRace()].maxFemale;
-
-        int current = player->GetByteValue(PLAYER_BYTES_2, 0);
-
-        current += change;
-
-        if (current > max)
-            current = 0;
-        else if (current < 0)
-            current = max;
-
-        // hit visual effect
-        creature->PlaySpellVisual(517);
-        player->PlaySpellVisual(290);
-
-        player->SetByteValue(PLAYER_BYTES_2, 0, current);
-        ChangeEffect(player);
-    }
-
-//    bool BoostModule::OnGossipSelect(Player* player, Item* item, uint32 sender, uint32 action, const std::string& code, uint32 gossipListId)
-//    {
-//        if (GetConfig()->enabled)
-//        {
-//            if (player)
-//            {
-//                // Check if using dual spec item
-//                if (item->GetEntry() != DUALSPEC_ITEM_ENTRY)
-//                    return false;
-//
-//#ifdef ENABLE_PLAYERBOTS
-//                if (sRandomPlayerbotMgr.IsFreeBot(player))
-//                    return false;
-//#endif
-//
-//                const uint32 playerId = player->GetObjectGuid().GetCounter();
-//                player->GetPlayerMenu()->ClearMenus();
-//
-//                if (!code.empty())
-//                {
-//                    std::string strCode = code;
-//                    CharacterDatabase.escape_string(strCode);
-//
-//                    if (action == GOSSIP_ACTION_INFO_DEF + 10)
-//                    {
-//                        SetPlayerSpecName(player, 0, strCode);
-//                    }
-//                    else if (action == GOSSIP_ACTION_INFO_DEF + 11)
-//                    {
-//                        SetPlayerSpecName(player, 1, strCode);
-//                    }
-//
-//                    player->GetPlayerMenu()->CloseGossip();
-//                }
-//                else
-//                {
-//                    switch (action)
-//                    {
-//                        case GOSSIP_ACTION_INFO_DEF + 1:
-//                        {
-//                            if (GetPlayerActiveSpec(playerId) == 0)
-//                            {
-//                                player->GetPlayerMenu()->CloseGossip();
-//                                const std::string msg = player->GetSession()->GetMangosString(DUAL_SPEC_ALREADY_ON_SPEC);
-//                                player->GetSession()->SendNotification(msg.c_str());
-//                            }
-//                            else
-//                            {
-//                                ActivatePlayerSpec(player, 0);
-//                            }
-//                        
-//                            break;
-//                        }
-//
-//                        case GOSSIP_ACTION_INFO_DEF + 2:
-//                        {
-//                            if (GetPlayerActiveSpec(playerId) == 1)
-//                            {
-//                                player->GetPlayerMenu()->CloseGossip();
-//                                const std::string msg = player->GetSession()->GetMangosString(DUAL_SPEC_ALREADY_ON_SPEC);
-//                                player->GetSession()->SendNotification(msg.c_str());
-//                            }
-//                            else
-//                            {
-//                                ActivatePlayerSpec(player, 1);
-//                            }
-//                        
-//                            break;
-//                        }
-//
-//                        case GOSSIP_ACTION_INFO_DEF + 999:
-//                        {
-//                            player->GetPlayerMenu()->CloseGossip();
-//                            break;
-//                        }
-//
-//                        default: break;
-//                    }
-//                }
-//
-//                return true;
-//            }
-//        }
-//
-//        return false;
-//    }
-
-
-    
-
-    void BoostModule::OnCharacterCreated(Player* player)
-    {
-        if (GetConfig()->enabled)
-        {
-            if (player)
-            {
-#ifdef ENABLE_PLAYERBOTS
-                if (sRandomPlayerbotMgr.IsFreeBot(player))
-                    return;
-#endif
-
-            }
-        }
-    }
-
-    
+    }   
 }

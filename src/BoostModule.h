@@ -20,57 +20,20 @@ namespace cmangos_module
         SPELL_HEAVY_NETHER_BAND = 27033,
         SPELL_TELEPORT_VISUAL = 41236,
 
-        GOSSIP_MENU_MAIN = 50200, // also contains other unscripted options - Contact Us, Donating, Reporting Bugs, Cheating Policy, etc.
-        GOSSIP_MENU_BOOST_CONFIRM = 50402,
-        GOSSIP_MENU_CONTACT = 50205,
-        GOSSIP_MENU_WHAT_IS_LV = 50201,
-        GOSSIP_MENU_DONATING = 50202,
-        GOSSIP_MENU_BUG_REPORT = 50203,
-        GOSSIP_MENU_CHEATING = 50204,
-
-        GOSSIP_MENU_OVERLORD_MAIN = 50414,
-
-        GAME_EVENT_INSTANT_58 = 211,
-
-        NPC_TEST_REALM_OVERLORD = 101000
-    };
-
-    enum BoostEnums2
-    {
-        SPELL_CYCLONE_VISUAL_SPAWN = 8609,
-
-        GOSSIP_TEXT_ENLIST_GREET = 50403,
-        GOSSIP_TEXT_ENLIST_REFUSE_LOW = 50404,
-        GOSSIP_TEXT_ENLIST_REFUSE_HIGH = 50405,
-        GOSSIP_TEXT_ENLIST_PET_MENU = 50406,
-        GOSSIP_TEXT_GREET_70 = 50407,
-        GOSSIP_TEXT_REFUSE_LOW_70 = 50408,
-        GOSSIP_TEXT_PICK_SPEC = 50409,
-        GOSSIP_TEXT_PICK_GEAR_1 = 50411,
-        GOSSIP_TEXT_PICK_GEAR_2 = 50412,
-        GOSSIP_TEXT_PICK_GEAR_3 = 50413,
-        
-        GOSSIP_TEXT_CRYSTAL = 50400,
-        GOSSIP_TEXT_CRYSTAL_2 = 50401,
-
-        GOSSIP_SENDER_OPTION = 50,
-        GOSSIP_SENDER_SUBOPTION = 51,
-
-        SAY_GREET = -1800999,
-        SAY_GREET_70 = -1800998,
-
         SET_ID_PRIMARY = 0,
         SET_ID_SECONDARY = 1,
         SET_ID_TERTIARY = 2,
         SET_ID_INSTANT_58 = 3,
 
-        NPC_ALLIANCE_OFFICER = 100501, // instant 58
-        NPC_HORDE_OFFICER = 100502, // instant 58
-        NPC_MASTER_PROVISIONER = 100503, // instant 70
-        NPC_ENCHANTMENT_CRYSTAL = 100504, // enchanter
-        NPC_BARBER              = 100505, // barber
-
-        GO_BARBER_CHAIR = 164767,
+        NPC_BOOSTER = 190011,
+        
+        GOSSIP_BOOST_GREET = 50401,
+        GOSSIP_BOOST_LOW_LEVEL = 50402,
+        GOSSIP_BOOST_PETS = 50403,
+        GOSSIP_BOOST_PICK_SPEC = 50404,
+        GOSSIP_BOOST_PICK_GEAR_1 = 50405,
+        GOSSIP_BOOST_PICK_GEAR_2 = 50406,
+        GOSSIP_BOOST_PICK_GEAR_3 = 50407,
 
         NPC_PET_BAT = 8600, // Plaguebat
         NPC_PET_BEAR = 7443, // Shardtooth Mauler
@@ -325,11 +288,6 @@ namespace cmangos_module
         80     // Ratchet, The Barrens
     };
 
-    typedef struct maxStyles_struct {
-        uint8 maxMale;
-        uint8 maxFemale;
-    } maxStyles_t;
-
     class BoostModule : public Module
     {
     public:
@@ -342,7 +300,6 @@ namespace cmangos_module
         // Player Hooks
         bool OnPreGossipHello(Player* player, Creature* creature) override;
         bool OnGossipSelect(Player* player, Creature* creature, uint32 sender, uint32 action, const std::string& code, uint32 gossipListId) override;
-        void OnCharacterCreated(Player* player) override;
 
     private:
         uint32 GetStarterMountForRace(Player* player);
@@ -356,6 +313,7 @@ namespace cmangos_module
         void CreatePet(Player* player, Creature* creature, uint32 entry);
         void AddAmmo(Player* player);
         void AddFood(Player* player, uint32 count = 20);
+        void AddReagents(Player* player);
         bool HasStarterSet(Player* player, std::vector<uint32> gearList);
         void RemoveStarterSet(Player* player, std::vector<uint32> gearList);
         void AddStarterSet(Player* player, Creature* creature, uint32 setId, int32 suffixOverride = 0, uint32 specId = 0);
@@ -365,28 +323,11 @@ namespace cmangos_module
         bool TaxiNodesKnown(Player& player) const;
         void TaxiNodesTeach(Player& player) const;
 
-        // Barber
-        void SelectFacialFeature(Player* player, Creature* creature, int change);
-        void SelectHairColor(Player* player, Creature* creature, int change);
-        void SelectHairStyle(Player* player, Creature* creature, int change);
-        void ChangeEffect(Player* player);
-
     private:
-        bool m_bCanGreet;
-        uint32 m_uiGreetTimer;
-        GuidList m_lPlayerGuids;
         std::vector<uint32> FullGearList;
         std::vector<uint32> FullGearListInstant58;
         std::vector<uint32> FullGearListBiS60;
         std::vector<uint32> FullGearListBiS70;
-
-        uint32 hairstyle;
-        uint32 haircolor;
-        uint32 facialfeature;
-        bool   helmetShown;
-        //std::map<uint32, DualSpecPlayerTalentMap[MAX_TALENT_SPECS]> playersTalents;
-        //std::map<uint32, std::string[MAX_TALENT_SPECS]> playersSpecNames;
-        //std::map<uint32, DualspecPlayerStatus> playersStatus;
     };
 }
 #endif
