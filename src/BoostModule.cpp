@@ -1266,7 +1266,7 @@ namespace cmangos_module
         ObjectMgr::QuestMap const& qTemplates = sObjectMgr.GetQuestTemplates();
         for (const auto& qTemplate : qTemplates)
         {
-            Quest const* quest = qTemplate.second;
+            Quest* quest = qTemplate.second.get();
             if (!quest)
                 continue;
 
