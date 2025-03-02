@@ -15,7 +15,7 @@ namespace cmangos_module
         SPELL_ARTISAN_RIDING = 34093,
         SPELL_ARTISAN_FIRST_AID = 10847,
         SPELL_MASTER_FIRST_AID = 27029,
-        SPELL_HEAVY_RUNECLOTH_BAND = 18632,
+        SPELL_HEAVY_RUNECLOTH_BAND = 18630,
         SPELL_NETHER_BAND = 27032,
         SPELL_HEAVY_NETHER_BAND = 27033,
         SPELL_TELEPORT_VISUAL = 41236,
@@ -317,8 +317,8 @@ namespace cmangos_module
         void AddAmmo(Player* player);
         void AddFood(Player* player, uint32 count = 20);
         void AddReagents(Player* player);
-        bool HasStarterSet(Player* player, std::vector<uint32> gearList);
-        void RemoveStarterSet(Player* player, std::vector<uint32> gearList);
+        bool HasStarterSet(Player* player, const std::vector<uint32>& gearList);
+        void RemoveStarterSet(Player* player, const std::vector<uint32>& gearList);
         void AddStarterSet(Player* player, Creature* creature, uint32 setId, int32 suffixOverride = 0, uint32 specId = 0);
         void GivePlayerItems(Player* recipient, Creature* creature, std::vector<uint32> gearList, uint32 setId = 0, int32 suffixOverride = 0);
         void OfferPrimarySecondaryModChoices(Player* player, uint32 actionIdBase, uint32 specId);

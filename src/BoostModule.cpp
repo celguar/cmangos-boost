@@ -7,11 +7,20 @@
 #include "Globals/ObjectMgr.h"
 #include "Spells/SpellMgr.h"
 #include "Grids/GridNotifiers.h"
-#include "Grids/GridNotifiersImpl.h"
 #include "Tools/Language.h"
 
 #ifdef ENABLE_PLAYERBOTS
 #include "playerbot/PlayerbotAI.h"
+#endif
+
+#if EXPANSION == 0
+#define MOUNT_LEVEL 40
+#endif
+#if EXPANSION == 1
+#define MOUNT_LEVEL 30
+#endif
+#if EXPANSION == 2
+#define MOUNT_LEVEL 20
 #endif
 
 namespace cmangos_module
@@ -130,12 +139,14 @@ namespace cmangos_module
         case RACE_DWARF: mountEntry = 5872; break;      // Brown Ram
         case RACE_NIGHTELF: mountEntry = 8632; break;   // Reins of the Spotted Frostsaber
         case RACE_GNOME: mountEntry = 8595; break;      // Blue Mechanostrider
-        case RACE_DRAENEI: mountEntry = 29744; break;   // Gray Elekk
         case RACE_ORC: mountEntry = 5665; break;        // Horn of the Dire Wolf
         case RACE_UNDEAD: mountEntry = 13331; break;    // Red Skeletal Horse
         case RACE_TAUREN: mountEntry = 15277; break;    // Gray Kodo
         case RACE_TROLL: mountEntry = 8588; break;      // Whistle of the Emerald Raptor
+#if EXPANSION > 0
+        case RACE_DRAENEI: mountEntry = 29744; break;   // Gray Elekk
         case RACE_BLOODELF: mountEntry = 29221; break;  // Black Hawkstrider
+#endif
         }
         return mountEntry;
     }
@@ -149,12 +160,14 @@ namespace cmangos_module
         case RACE_DWARF: mountEntry = 18787; break;     // Swift Gray Ram
         case RACE_NIGHTELF: mountEntry = 18767; break;  // Reins of the Swift Mistsaber
         case RACE_GNOME: mountEntry = 18772; break;     // Swift Green Mechanostrider
-        case RACE_DRAENEI: mountEntry = 29745; break;   // Great Blue Elekk
         case RACE_ORC: mountEntry = 18797; break;       // Horn of the Swift Timber Wolf 
         case RACE_UNDEAD: mountEntry = 18791; break;    // Purple Skeletal Warhorse
         case RACE_TAUREN: mountEntry = 18795; break;    // Great Gray Kodo
         case RACE_TROLL: mountEntry = 18790; break;     // Swift Orange Raptor
+#if EXPANSION > 0
+        case RACE_DRAENEI: mountEntry = 29745; break;   // Great Blue Elekk
         case RACE_BLOODELF: mountEntry = 28927; break;  // Red Hawkstrider
+#endif
         }
         return mountEntry;
     }
@@ -177,12 +190,14 @@ namespace cmangos_module
                 player->GetPlayerMenu()->ClearMenus();
 
                 uint32 minLevel = 1;
-                if (player->getRace() == RACE_DRAENEI || player->getRace() == RACE_BLOODELF)
-                    minLevel = GetConfig()->newRaceMinLevel;
-                else if (player->GetTeam() == ALLIANCE)
+                if (player->GetTeam() == ALLIANCE)
                     minLevel = GetConfig()->minLevelAlliance;
                 else if (player->GetTeam() == HORDE)
                     minLevel = GetConfig()->minLevelHorde;
+#if EXPANSION > 0
+                if (player->getRace() == RACE_DRAENEI || player->getRace() == RACE_BLOODELF)
+                    minLevel = GetConfig()->newRaceMinLevel;
+#endif
 
                 if (player->GetLevel() < minLevel)
                 {
@@ -190,9 +205,22 @@ namespace cmangos_module
                     return true;
                 }
 
-                if (player->GetLevel() < 58)
+                if (GetConfig()->enableBoost58 && player->GetLevel() < 58)
                 {
+#if EXPANSION > 0
                     player->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_INTERACT_1, "Boost to level 58. |cFF006400[Teleport to Dark Portal]|r", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 30, "Are you sure?", 0, false);
+#else
+                    if (player->GetTeam() == ALLIANCE)
+                        player->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_INTERACT_1,
+                                                         "Boost to level 58. |cFF006400[Teleport to Stormwind City]|r",
+                                                         GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 30,
+                                                         "Are you sure?", 0, false);
+                    else
+                        player->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_INTERACT_1,
+                                                         "Boost to level 58. |cFF006400[Teleport to Orgrimmar]|r",
+                                                         GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 30,
+                                                         "Are you sure?", 0, false);
+#endif
                 }
                 /*if (player->GetLevel() < 60)
                 {
@@ -203,25 +231,38 @@ namespace cmangos_module
                     player->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_INTERACT_1, "Boost to level 70. |cFF006400[Teleport to Shattrath]|r", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 50, "Are you sure?", 0, false);
                 }*/
 
-                if (player->GetLevel() < 58)
+                if (GetConfig()->enableLevel58 && player->GetLevel() < 58)
                 {
                     player->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_INTERACT_1, "Give level 58 |cFF006400[Level and basic skills]|r", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 3, "Are you sure?", 0, false);
                 }
-                if (player->GetLevel() < 60)
+                if (GetConfig()->enableLevel60 && player->GetLevel() < 60)
                 {
                     player->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_INTERACT_1, "Give level 60 |cFF006400[Level and basic skills]|r", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 4, "Are you sure?", 0, false);
                 }
-                if (player->GetLevel() < 70)
+#if EXPANSION > 0
+                if (GetConfig()->enableLevel70 && player->GetLevel() < 70)
                 {
                     player->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_INTERACT_1, "Give level 70 |cFF006400[Level and basic skills]|r", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 5, "Are you sure?", 0, false);
                 }
+#endif
 
-                if (player->GetLevel() >= 58)
+                if (GetConfig()->enableTeleports && player->GetLevel() >= 58)
                 {
+#if EXPANSION > 0
                     if (player->GetAreaId() != 3703)
                         player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TAXI, "Teleport to Shattrath City", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 6);
                     if (player->GetAreaId() != 72)
                         player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TAXI, "Teleport to Blasted Lands (Dark Portal)", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 7);
+#else
+                    if (player->GetTeam() == ALLIANCE && player->GetAreaId() != 1519)
+                    {
+                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TAXI, "Teleport to Stormwind City", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 6);
+                    }
+                    else if (player->GetTeam() == HORDE && player->GetAreaId() != 1637)
+                    {
+                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TAXI, "Teleport to Orgrimmar", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 6);
+                    }
+#endif
 
                     CustomTeleportLocation startLocation;
                     switch (player->getRace())
@@ -236,9 +277,6 @@ namespace cmangos_module
                     case RACE_NIGHTELF:
                         startLocation = { teleLocs[6].map, teleLocs[6].x, teleLocs[6].y, teleLocs[6].z, teleLocs[6].o };
                         break;
-                    case RACE_DRAENEI:
-                        startLocation = { teleLocs[7].map, teleLocs[7].x, teleLocs[7].y, teleLocs[7].z, teleLocs[7].o };
-                        break;
                     case RACE_TROLL:
                     case RACE_ORC:
                         startLocation = { teleLocs[8].map, teleLocs[8].x, teleLocs[8].y, teleLocs[8].z, teleLocs[8].o };
@@ -249,34 +287,45 @@ namespace cmangos_module
                     case RACE_TAUREN:
                         startLocation = { teleLocs[10].map, teleLocs[10].x, teleLocs[10].y, teleLocs[10].z, teleLocs[10].o };
                         break;
+#if EXPANSION > 0
+                    case RACE_DRAENEI:
+                        startLocation = { teleLocs[7].map, teleLocs[7].x, teleLocs[7].y, teleLocs[7].z, teleLocs[7].o };
+                        break;
                     case RACE_BLOODELF:
                         startLocation = { teleLocs[11].map, teleLocs[11].x, teleLocs[11].y, teleLocs[11].z, teleLocs[11].o };
                         break;
+#endif
                     }
 
-                    if (player->GetMapId() != startLocation.map || player->GetDistance2d(startLocation.x, startLocation.y) > 100.0f)
+                    if (GetConfig()->enableTeleports && player->GetMapId() != startLocation.map || player->GetDistance2d(startLocation.x, startLocation.y) > 100.0f)
                         player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TAXI, "Teleport to Starting Area", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 24);
 
-                    if (!TaxiNodesKnown(*player))
+                    if (GetConfig()->enableTaxi && !TaxiNodesKnown(*player))
                         player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TAXI, "Learn Azeroth flight paths", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 13);
                 }
 
                 //player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TRAINER, "Train available spells", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 20);
-                player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TRAINER, "Train available spells", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 21);
+                if (GetConfig()->enableSpells)
+                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TRAINER, "Train available spells", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 21);
 
-                if (player->GetLevel() >= 58)
+                if (GetConfig()->enableGearBlue58 && player->GetLevel() >= 58 && !HasStarterSet(player, FullGearListInstant58))
                     player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Add Blue Gear. |cFF0008E8 Level 58|r", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 2);
-                if (player->GetLevel() >= 60)
+                if (GetConfig()->enableBoost60Bis && player->GetLevel() >= 60 && !HasStarterSet(player, FullGearListBiS60))
                     player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Add BiS Gear. |cFF0008E8 Level 60|r", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 8);
-                if (player->GetLevel() == 70)
+#if EXPANSION > 0
+                if (GetConfig()->enableBoost70Bis && player->GetLevel() == 70)
                     player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "Add BiS Gear. |cFF0008E8 Level 70|r", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 9);
-
+#endif
+                if (HasStarterSet(player, FullGearListInstant58))
+                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "|cFF8B0000Remove all level 58 blue starter gear.|r", GOSSIP_SENDER_MAIN, 92);
                 if (HasStarterSet(player, FullGearListBiS60))
-                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "|cFF8B0000Remove all level 60 BiS gear.|r", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 10);
+                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "|cFF8B0000Remove all level 60 BiS gear.|r", GOSSIP_SENDER_MAIN, 93);
+#if EXPANSION > 0
                 if (HasStarterSet(player, FullGearListBiS70))
-                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "|cFF8B0000Remove all level 70 BiS gear.|r", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 11);
+                    player->ADD_GOSSIP_ITEM(GOSSIP_ICON_BATTLE, "|cFF8B0000Remove all level 70 BiS gear.|r", GOSSIP_SENDER_MAIN, 94);
+#endif
 
-                if (player->GetLevel() >= 30)
+                if (GetConfig()->enableMounts && player->GetLevel() >= MOUNT_LEVEL)
                 {
                     uint32 groundEpicMount = GetStarterEpicMountForRace(player);
                     uint32 groundBlueMount = GetStarterMountForRace(player);
@@ -291,13 +340,13 @@ namespace cmangos_module
                     }
                 }
 
-                if (player->GetLevel() >= 58 && !player->HasItemCount(4500, 4))
+                if (GetConfig()->enableBags && player->GetLevel() >= 58 && !player->HasItemCount(4500, 4))
                     player->ADD_GOSSIP_ITEM(GOSSIP_ICON_VENDOR, "Give Bags", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 23);
 
-                if (player->GetLevel() >= 58)
+                if (GetConfig()->enableFoodRegs && player->GetLevel() >= 58)
                     player->ADD_GOSSIP_ITEM(GOSSIP_ICON_VENDOR, "Give Food & Reagents", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 25);
 
-                if (player->GetLevel() >= 58 && (player->getClass() == CLASS_HUNTER || player->getClass() == CLASS_ROGUE || player->getClass() == CLASS_WARRIOR))
+                if (GetConfig()->enableAmmo && player->GetLevel() >= 58 && (player->getClass() == CLASS_HUNTER || player->getClass() == CLASS_ROGUE || player->getClass() == CLASS_WARRIOR))
                 {
                     Item* pItem = player->GetItemByPos(INVENTORY_SLOT_BAG_0, EQUIPMENT_SLOT_RANGED);
                     if (pItem)
@@ -308,27 +357,35 @@ namespace cmangos_module
 
                 if (player->GetLevel() >= 10)
                 {
-                    player->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_CHAT, "Unlearn Talents", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 14, "Are you sure?", 0, false);
+                    if (GetConfig()->enableResetTalents)
+                        player->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_CHAT, "Unlearn Talents", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 14, "Are you sure?", 0, false);
 
                     if (player->getClass() == CLASS_HUNTER)
                     {
-                        if (!player->GetPet())
+                        if (GetConfig()->enablePet && !player->GetPet())
                             player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TALK, "Pet Menu", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 17);
-                        else if (player->GetPet()->m_spells.size() >= 1)
+                        else if (GetConfig()->enableUntrainPet && !player->GetPet()->m_spells.empty())
                             player->ADD_GOSSIP_ITEM(GOSSIP_ICON_CHAT, "Untrain Pet", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 19);
                     }
                 }
 
-                if (player->GetLevel() >= 58 && player->GetMoney() < 1000000)
+                if (GetConfig()->starterGold && player->GetLevel() >= 58 && player->GetMoney() < GetConfig()->starterGold)
                     player->ADD_GOSSIP_ITEM(GOSSIP_ICON_MONEY_BAG, "Give 100 gold!", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 15);
 
-                if (player->GetLevel() >= 58)
+                if (GetConfig()->enableFirstAid && player->GetLevel() >= 58)
                 {
+#if EXPANSION == 0
+                    if (!player->HasSpell(10846) || !player->HasSpell(SPELL_HEAVY_RUNECLOTH_BAND))
+                        player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TRAINER, "Train |cFF006400First Aid|r", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 22);
+#endif
+#if EXPANSION == 1
                     if (!player->HasSpell(10846) || (player->GetLevel() >= 60 && !player->HasSpell(SPELL_NETHER_BAND)) || (player->GetLevel() >= 70 && !player->HasSpell(SPELL_HEAVY_NETHER_BAND)))
                         player->ADD_GOSSIP_ITEM(GOSSIP_ICON_TRAINER, "Train |cFF006400First Aid|r", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 22);
+#endif
                 }
 
-                player->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_INTERACT_1, "Reset my dungeon/raid lockouts.", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 16, "Are you sure?", 0, false);
+                if (!player->GetBoundInstances().empty() && GetConfig()->enableResetInstances)
+                    player->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_INTERACT_1, "Reset my dungeon/raid lockouts.", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 16, "Are you sure?", 0, false);
 
                 player->SEND_GOSSIP_MENU(GOSSIP_BOOST_GREET, creature->GetObjectGuid());
                 return true;
@@ -421,11 +478,31 @@ namespace cmangos_module
                     AddFood(player, 60);
                     AddReagents(player);
                     player->CastSpell(player, SPELL_TELEPORT_VISUAL, TRIGGERED_OLD_TRIGGERED);
+#if EXPANSION > 0
                     // Teleport Player to Dark Portal
                     if (player->GetTeam() == ALLIANCE)
                         player->TeleportTo(teleLocs[0].map, teleLocs[0].x, teleLocs[0].y, teleLocs[0].z, teleLocs[0].o);
                     else
                         player->TeleportTo(teleLocs[1].map, teleLocs[1].x, teleLocs[1].y, teleLocs[1].z, teleLocs[1].o);
+#else
+                    // Teleport Player to Stormwind or Orgrimmar
+                    if (player->GetTeam() == ALLIANCE)
+                    {
+                        GameTele const* tele = sObjectMgr.GetGameTele("stormwind");
+                        if (tele)
+                        {
+                            player->TeleportTo(tele->mapId, tele->position_x, tele->position_y, tele->position_z, tele->orientation);
+                        }
+                    }
+                    else
+                    {
+                        GameTele const* tele = sObjectMgr.GetGameTele("orgrimmar");
+                        if (tele)
+                        {
+                            player->TeleportTo(tele->mapId, tele->position_x, tele->position_y, tele->position_z, tele->orientation);
+                        }
+                    }
+#endif
                     break;
                 }
                 case GOSSIP_ACTION_INFO_DEF + 4:
@@ -458,11 +535,31 @@ namespace cmangos_module
                     player->CLOSE_GOSSIP_MENU();
                     BoostPlayer(player, 60);
                     player->CastSpell(player, SPELL_TELEPORT_VISUAL, TRIGGERED_OLD_TRIGGERED);
+#if EXPANSION > 0
                     // Teleport Player to Dark Portal
                     if (player->GetTeam() == ALLIANCE)
                         player->TeleportTo(teleLocs[0].map, teleLocs[0].x, teleLocs[0].y, teleLocs[0].z, teleLocs[0].o);
                     else
                         player->TeleportTo(teleLocs[1].map, teleLocs[1].x, teleLocs[1].y, teleLocs[1].z, teleLocs[1].o);
+#else
+                    // Teleport Player to Stormwind or Orgrimmar
+                    if (player->GetTeam() == ALLIANCE)
+                    {
+                        GameTele const* tele = sObjectMgr.GetGameTele("stormwind");
+                        if (tele)
+                        {
+                            player->TeleportTo(tele->mapId, tele->position_x, tele->position_y, tele->position_z, tele->orientation);
+                        }
+                    }
+                    else
+                    {
+                        GameTele const* tele = sObjectMgr.GetGameTele("orgrimmar");
+                        if (tele)
+                        {
+                            player->TeleportTo(tele->mapId, tele->position_x, tele->position_y, tele->position_z, tele->orientation);
+                        }
+                    }
+#endif
                     break;
                 }
                 case GOSSIP_ACTION_INFO_DEF + 5:
@@ -508,16 +605,36 @@ namespace cmangos_module
                     }
                     break;
                 }
-                // Teleport Only - Shattrath City
+                // Teleport Only - Shattrath City or Capital City
                 case GOSSIP_ACTION_INFO_DEF + 6:
                 {
                     player->CLOSE_GOSSIP_MENU();
                     player->CastSpell(player, SPELL_TELEPORT_VISUAL, TRIGGERED_OLD_TRIGGERED);
+#if EXPANSION > 0
                     // Teleport Player To Shattrath City
                     if (player->GetTeam() == ALLIANCE)
                         player->TeleportTo(teleLocs[2].map, teleLocs[2].x, teleLocs[2].y, teleLocs[2].z, teleLocs[2].o);
                     else
                         player->TeleportTo(teleLocs[3].map, teleLocs[3].x, teleLocs[3].y, teleLocs[3].z, teleLocs[3].o);
+#else
+                    // Teleport Player to Stormwind or Orgrimmar
+                    if (player->GetTeam() == ALLIANCE)
+                    {
+                        GameTele const* tele = sObjectMgr.GetGameTele("stormwind");
+                        if (tele)
+                        {
+                            player->TeleportTo(tele->mapId, tele->position_x, tele->position_y, tele->position_z, tele->orientation);
+                        }
+                    }
+                    else
+                    {
+                        GameTele const* tele = sObjectMgr.GetGameTele("orgrimmar");
+                        if (tele)
+                        {
+                            player->TeleportTo(tele->mapId, tele->position_x, tele->position_y, tele->position_z, tele->orientation);
+                        }
+                    }
+#endif
                     break;
                 }
                 // Teleport Only - Dark Portal
@@ -549,9 +666,6 @@ namespace cmangos_module
                     case RACE_NIGHTELF:
                         player->TeleportTo(teleLocs[6].map, teleLocs[6].x, teleLocs[6].y, teleLocs[6].z, teleLocs[6].o);
                         break;
-                    case RACE_DRAENEI:
-                        player->TeleportTo(teleLocs[7].map, teleLocs[7].x, teleLocs[7].y, teleLocs[7].z, teleLocs[7].o);
-                        break;
                     case RACE_TROLL:
                     case RACE_ORC:
                         player->TeleportTo(teleLocs[8].map, teleLocs[8].x, teleLocs[8].y, teleLocs[8].z, teleLocs[8].o);
@@ -562,9 +676,14 @@ namespace cmangos_module
                     case RACE_TAUREN:
                         player->TeleportTo(teleLocs[10].map, teleLocs[10].x, teleLocs[10].y, teleLocs[10].z, teleLocs[10].o);
                         break;
+#if EXPANSION > 0
+                    case RACE_DRAENEI:
+                        player->TeleportTo(teleLocs[7].map, teleLocs[7].x, teleLocs[7].y, teleLocs[7].z, teleLocs[7].o);
+                        break;
                     case RACE_BLOODELF:
                         player->TeleportTo(teleLocs[11].map, teleLocs[11].x, teleLocs[11].y, teleLocs[11].z, teleLocs[11].o);
                         break;
+#endif
                     }
                     break;
                 }
@@ -747,7 +866,7 @@ namespace cmangos_module
                 case GOSSIP_ACTION_INFO_DEF + 12:
                 {
                     player->GetPlayerMenu()->CloseGossip();
-                    if (player->GetLevel() < 30)
+                    if (player->GetLevel() < MOUNT_LEVEL)
                         break;
 
                     uint32 groundEpicMount = GetStarterEpicMountForRace(player);
@@ -798,13 +917,14 @@ namespace cmangos_module
                 case GOSSIP_ACTION_INFO_DEF + 15:
                 {
                     player->GetPlayerMenu()->CloseGossip();
-                    player->ModifyMoney(1000000);
+                    player->ModifyMoney((int32)GetConfig()->starterGold);
                     break;
                 }
                 // Unbind Instances
                 case GOSSIP_ACTION_INFO_DEF + 16:
                 {
                     player->GetPlayerMenu()->CloseGossip();
+#if EXPANSION > 0
                     for (uint8 i = 0; i < MAX_DIFFICULTY; ++i)
                     {
                         Player::BoundInstancesMap& binds = player->GetBoundInstances(Difficulty(i));
@@ -813,13 +933,25 @@ namespace cmangos_module
                             if (itr->first != player->GetMapId())
                             {
                                 DungeonPersistentState* save = itr->second.state;
-                                std::string timeleft = secsToTimeString(save->GetResetTime() - time(nullptr), true);
                                 player->UnbindInstance(itr, Difficulty(i));
                             }
                             else
                                 ++itr;
                         }
                     }
+#else
+                    Player::BoundInstancesMap& binds = player->GetBoundInstances();
+                    for (Player::BoundInstancesMap::iterator itr = binds.begin(); itr != binds.end();)
+                    {
+                        if (itr->first != player->GetMapId())
+                        {
+                            DungeonPersistentState* save = itr->second.state;
+                            player->UnbindInstance(itr);
+                        }
+                        else
+                            ++itr;
+                    }
+#endif
                     break;
                 }
                 // Pets - Page 1
@@ -912,7 +1044,7 @@ namespace cmangos_module
                 {
                     player->GetPlayerMenu()->CloseGossip();
                     player->CastSpell(player, SPELL_ARTISAN_FIRST_AID, TRIGGERED_OLD_TRIGGERED);
-                    player->CastSpell(player, SPELL_HEAVY_RUNECLOTH_BAND, TRIGGERED_OLD_TRIGGERED);
+                    player->learnSpell(SPELL_HEAVY_RUNECLOTH_BAND, false);
                     if (player->GetLevel() >= 60)
                     {
                         player->CastSpell(player, SPELL_MASTER_FIRST_AID, TRIGGERED_OLD_TRIGGERED);
@@ -1422,8 +1554,10 @@ namespace cmangos_module
             SetMaxSkill(player, SKILL_STAVES);
             SetMaxSkill(player, SKILL_2H_MACES);
             SetMaxSkill(player, SKILL_DAGGERS);
-            SetMaxSkill(player, SKILL_POLEARMS);
             SetMaxSkill(player, SKILL_FIST_WEAPONS);
+#if EXPANSION > 1
+            SetMaxSkill(player, SKILL_POLEARMS);
+#endif
             break;
         case CLASS_WARRIOR:
             SetMaxSkill(player, SKILL_SWORDS);
@@ -1460,17 +1594,14 @@ namespace cmangos_module
             SetMaxSkill(player, SKILL_AXES);
             SetMaxSkill(player, SKILL_MACES);
             SetMaxSkill(player, SKILL_STAVES);
-            SetMaxSkill(player, SKILL_2H_MACES);
-            SetMaxSkill(player, SKILL_2H_AXES);
             SetMaxSkill(player, SKILL_DAGGERS);
             SetMaxSkill(player, SKILL_FIST_WEAPONS);
+#if EXPANSION > 0
+            SetMaxSkill(player, SKILL_2H_MACES);
+            SetMaxSkill(player, SKILL_2H_AXES);
+#endif
             break;
         case CLASS_MAGE:
-            SetMaxSkill(player, SKILL_SWORDS);
-            SetMaxSkill(player, SKILL_STAVES);
-            SetMaxSkill(player, SKILL_DAGGERS);
-            SetMaxSkill(player, SKILL_WANDS);
-            break;
         case CLASS_WARLOCK:
             SetMaxSkill(player, SKILL_SWORDS);
             SetMaxSkill(player, SKILL_STAVES);
@@ -1580,10 +1711,14 @@ namespace cmangos_module
             if (player->HasFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED))
             {
                 pet->SetFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_PLAYER_CONTROLLED);
+#if EXPANSION > 0
                 pet->SetByteValue(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_PLAYER_CONTROLLED_DEBUFF_LIMIT);
             }
             else
                 pet->SetByteValue(UNIT_FIELD_BYTES_2, 1, UNIT_BYTE2_CREATURE_DEBUFF_LIMIT);
+#else
+            }
+#endif
 
             if (player->IsImmuneToNPC())
                 pet->SetImmuneToNPC(true);
@@ -1617,9 +1752,11 @@ namespace cmangos_module
             // visual effect for levelup
             pet->SetUInt32Value(UNIT_FIELD_LEVEL, level);
 
+#if EXPANSION > 0
             // enable rename and abandon prompt
             pet->SetByteFlag(UNIT_FIELD_BYTES_2, 2, UNIT_CAN_BE_RENAMED);
             pet->SetByteFlag(UNIT_FIELD_BYTES_2, 2, UNIT_CAN_BE_ABANDONED);
+#endif
 
             // this enables pet details window (Shift+P)
             pet->InitPetCreateSpells();
@@ -1871,8 +2008,9 @@ namespace cmangos_module
         }
     }
 
-    bool BoostModule::HasStarterSet(Player* player, std::vector<uint32> gearList)
+    bool BoostModule::HasStarterSet(Player* player, const std::vector<uint32>& gearList)
     {
+        uint8 counter = 0;
         for (auto item : gearList)
         {
             ItemPrototype const* proto = ObjectMgr::GetItemPrototype(item);
@@ -1884,13 +2022,13 @@ namespace cmangos_module
                 continue;
 
             if (player->HasItemCount(item, 1))
-                return true;
+                counter++;
         }
 
-        return false;
+        return counter > 10;
     }
 
-    void BoostModule::RemoveStarterSet(Player* player, std::vector<uint32> gearList)
+    void BoostModule::RemoveStarterSet(Player* player, const std::vector<uint32>& gearList)
     {
         for (auto item : gearList)
         {
