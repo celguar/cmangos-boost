@@ -384,7 +384,11 @@ namespace cmangos_module
 #endif
                 }
 
+#if EXPANSION > 0
+                if ((!player->GetBoundInstances(DUNGEON_DIFFICULTY_NORMAL).empty() || !player->GetBoundInstances(DUNGEON_DIFFICULTY_HEROIC).empty()) && GetConfig()->enableResetInstances)
+#else
                 if (!player->GetBoundInstances().empty() && GetConfig()->enableResetInstances)
+#endif
                     player->ADD_GOSSIP_ITEM_EXTENDED(GOSSIP_ICON_INTERACT_1, "Reset my dungeon/raid lockouts.", GOSSIP_SENDER_MAIN, GOSSIP_ACTION_INFO_DEF + 16, "Are you sure?", 0, false);
 
                 player->SEND_GOSSIP_MENU(GOSSIP_BOOST_GREET, creature->GetObjectGuid());
