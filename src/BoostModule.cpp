@@ -1451,14 +1451,14 @@ namespace cmangos_module
                 uint32 reqLevel = 0;
 
                 // skip wrong class/race skills
-                if (!player->IsSpellFitByClassAndRace(tSpell->learnedSpell, &reqLevel))
+                if (!player->IsSpellFitByClassAndRace(tSpell->spell, &reqLevel))
                     continue;
 
                 if (tSpell->conditionId && !sObjectMgr.IsConditionSatisfied(tSpell->conditionId, player, player->GetMap(), player, CONDITION_FROM_TRAINER))
                     continue;
 
                 // skip spells with first rank learned as talent (and all talents then also)
-                uint32 first_rank = sSpellMgr.GetFirstSpellInChain(tSpell->learnedSpell);
+                uint32 first_rank = sSpellMgr.GetFirstSpellInChain(tSpell->spell);
                 reqLevel = tSpell->isProvidedReqLevel ? tSpell->reqLevel : std::max(reqLevel, tSpell->reqLevel);
                 bool isValidTalent = GetTalentSpellCost(first_rank) && player->HasSpell(first_rank) && reqLevel <= player->GetLevel();
 
@@ -1466,7 +1466,7 @@ namespace cmangos_module
                 if (state != TRAINER_SPELL_GREEN && !isValidTalent)
                     continue;
 
-                SpellEntry const* proto = sSpellTemplate.LookupEntry<SpellEntry>(tSpell->learnedSpell);
+                SpellEntry const* proto = sSpellTemplate.LookupEntry<SpellEntry>(tSpell->spell);
                 if (!proto)
                     continue;
 
@@ -1483,7 +1483,7 @@ namespace cmangos_module
                 // skip other spell families (minus a few exceptions)
                 if (proto->SpellFamilyName != family)
                 {
-                    SkillLineAbilityMapBounds bounds = sSpellMgr.GetSkillLineAbilityMapBoundsBySpellId(tSpell->learnedSpell);
+                    SkillLineAbilityMapBounds bounds = sSpellMgr.GetSkillLineAbilityMapBoundsBySpellId(tSpell->spell);
                     if (bounds.first == bounds.second)
                         continue;
 
@@ -1513,14 +1513,14 @@ namespace cmangos_module
                 }
 
                 // skip wrong class/race skills
-                if (!player->IsSpellFitByClassAndRace(tSpell->learnedSpell))
+                if (!player->IsSpellFitByClassAndRace(tSpell->spell))
                     continue;
 
                 // skip broken spells
                 if (!SpellMgr::IsSpellValid(proto, player, false))
                     continue;
 
-                if (tSpell->learnedSpell)
+                if (tSpell->spell)
                 {
                     bool learned = false;
                     for (int j = 0; j < 3; ++j)
@@ -1535,7 +1535,7 @@ namespace cmangos_module
 
                     if (!learned)
                     {
-                        player->learnSpell(tSpell->learnedSpell, false);
+                        player->learnSpell(tSpell->spell, false);
                     }
                 }
                 else
